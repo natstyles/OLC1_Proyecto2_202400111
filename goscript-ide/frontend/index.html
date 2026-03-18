@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>GoScript IDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+</head>
+<body>
+    <div>
+        <button id="btnEjecutar">Ejecutar</button>
+        <input type="file" id="btnAbrir" accept=".gst">
+        <button id="btnGuardar">Guardar</button>
+    </div>
+    
+    <br>
+
+    <div>
+        <h3>Editor</h3>
+        <textarea id="editor"></textarea>
+    </div>
+
+    <div>
+        <h3>Consola</h3>
+        <textarea id="consola" rows="10" cols="80" readonly></textarea>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
