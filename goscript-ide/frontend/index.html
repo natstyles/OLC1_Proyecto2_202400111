@@ -37,6 +37,17 @@
         
         textarea.console { flex: 1; background: #1e1e1e; color: #00ff00; padding: 10px; resize: none; font-family: monospace; font-size: 16px; border: none; outline: none; }
         h3 { margin: 0; padding: 10px; background: #ecf0f1; border-bottom: 1px solid #ccc; font-size: 14px; }
+
+        .report-tab { border: none; background: #34495e; color: white; padding: 10px 15px; cursor: pointer; transition: 0.3s; }
+        .report-tab.active { background: #1e1e1e; border-bottom: 2px solid #3498db; }
+        .report-content { display: none; flex-direction: column; flex: 1; overflow: hidden; background: #1e1e1e; color: white; }
+        .report-content.active { display: flex; }
+            
+        .table-wrapper { padding: 10px; overflow-y: auto; flex: 1; }
+        table { width: 100%; border-collapse: collapse; background: #fff; color: #333; font-size: 14px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background: #eee; position: sticky; top: 0; }
+        .report-content h3 { color: #2c3e50; background: #ecf0f1; margin: 0; padding: 10px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -56,8 +67,47 @@
             </div>
         </div>
         <div class="console-container">
-            <h3>Consola</h3>
-            <textarea id="consola" class="console" readonly placeholder="Consola de salida..."></textarea>
+            <div id="report-tabs" style="display: flex; background: #2c3e50;">
+                <button class="report-tab active" onclick="verReporte('consola')">Consola</button>
+                <button class="report-tab" onclick="verReporte('errores')">Errores</button>
+                <button class="report-tab" onclick="verReporte('simbolos')">Símbolos</button>
+                <button class="report-tab" onclick="verReporte('ast')">AST</button>
+            </div>
+        
+            <div id="cont-consola" class="report-content active">
+                <textarea id="consola" class="console" readonly placeholder="Consola de salida..."></textarea>
+            </div>
+        
+            <div id="cont-errores" class="report-content">
+                <h3>Reporte de Errores</h3>
+                <div class="table-wrapper">
+                    <table id="tabla-errores">
+                        <thead>
+                            <tr><th>#</th><th>Descripción</th><th>Línea</th><th>Columna</th><th>Tipo</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        
+            <div id="cont-simbolos" class="report-content">
+                <h3>Tabla de Símbolos</h3>
+                <div class="table-wrapper">
+                    <table id="tabla-simbolos">
+                        <thead>
+                            <tr><th>ID</th><th>Tipo Símbolo</th><th>Tipo Dato</th><th>Ámbito</th><th>Línea</th><th>Columna</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        
+            <div id="cont-ast" class="report-content">
+                <h3>Árbol de Sintaxis Abstracta (AST)</h3>
+                <div id="canvas-ast" style="flex: 1; background: white; overflow: auto; text-align: center;">
+                    <p style="color: #666; margin-top: 20px;">Ejecuta el código para generar el árbol.</p>
+                </div>
+            </div>
         </div>
     </div>
 

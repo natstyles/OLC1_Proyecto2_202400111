@@ -172,3 +172,19 @@ btnEjecutar.addEventListener('click', async () => {
 
 contadorNuevos++;
 crearPestana(`Nuevo ${contadorNuevos}`, '', true);
+
+function verReporte(tipo) {
+    // Desactivar todas las pestañas y contenidos
+    document.querySelectorAll('.report-tab').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.report-content').forEach(cont => cont.classList.remove('active'));
+
+    // Activar la seleccionada
+    // Nota: El botón se activa por orden de aparición en este caso simplificado
+    const botones = document.querySelectorAll('.report-tab');
+    if(tipo === 'consola') botones[0].classList.add('active');
+    if(tipo === 'errores') botones[1].classList.add('active');
+    if(tipo === 'simbolos') botones[2].classList.add('active');
+    if(tipo === 'ast') botones[3].classList.add('active');
+
+    document.getElementById(`cont-${tipo}`).classList.add('active');
+}
