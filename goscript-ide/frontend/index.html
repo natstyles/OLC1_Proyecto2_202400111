@@ -5,25 +5,59 @@
     <title>GoScript IDE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; }
-        .toolbar { padding: 15px; background: #2c3e50; color: white; }
-        .container { display: flex; flex: 1; }
-        .editor-container, .console-container { flex: 1; border: 1px solid #ccc; display: flex; flex-direction: column; }
-        .CodeMirror { flex: 1; height: auto; font-size: 16px; }
-        textarea.console { flex: 1; background: #1e1e1e; color: #00ff00; padding: 10px; resize: none; font-family: monospace; font-size: 16px; }
-        button, input { padding: 8px; margin-right: 10px; cursor: pointer; border-radius: 10px;}
+        body { font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; overflow: hidden; }
+        .toolbar { padding: 15px; background: #2c3e50; color: white; display: flex; gap: 10px; align-items: center; }
+        button, input { padding: 8px; cursor: pointer; }
+        
+        #tabs { 
+            display: flex; 
+            background: #ecf0f1; 
+            border-bottom: 1px solid #ccc; 
+            padding-top: 8px; 
+            padding-left: 8px; 
+            overflow-x: auto; 
+            overflow-y: hidden; 
+        }
+        
+        #tabs::-webkit-scrollbar { height: 6px; }
+        #tabs::-webkit-scrollbar-track { background: #ecf0f1; }
+        #tabs::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 3px; }
+        #tabs::-webkit-scrollbar-thumb:hover { background: #95a5a6; }
+
+        .tab { padding: 8px 15px; margin-right: 4px; cursor: pointer; border: 1px solid #ccc; border-bottom: none; background: #ddd; border-radius: 5px 5px 0 0; white-space: nowrap; flex-shrink: 0; }
+        .tab.active { background: #fff; font-weight: bold; position: relative; top: 1px; border-bottom: 1px solid #fff; }
+        .close-btn { margin-left: 8px; font-size: 12px; color: #888; border-radius: 50%; padding: 2px 5px; }
+        .close-btn:hover { background: #e74c3c; color: white; }
+        
+        .container { display: flex; flex: 1; overflow: hidden; }
+        .editor-container, .console-container { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #ccc; overflow: hidden; }
+        
+        .editor-wrapper { flex: 1; position: relative; }
+        .CodeMirror { position: absolute; top: 0; bottom: 0; left: 0; right: 0; height: 100%; font-size: 16px; }
+        
+        textarea.console { flex: 1; background: #1e1e1e; color: #00ff00; padding: 10px; resize: none; font-family: monospace; font-size: 16px; border: none; outline: none; }
+        h3 { margin: 0; padding: 10px; background: #ecf0f1; border-bottom: 1px solid #ccc; font-size: 14px; }
     </style>
 </head>
 <body>
     <div class="toolbar">
-        <button id="btnEjecutar">Ejecutar</button> <input type="file" id="btnAbrir" accept=".gst"> <button id="btnGuardar">Guardar</button> 
+        <button id="btnEjecutar">Ejecutar</button>
+        <button id="btnNuevaPestana">Nueva Pestaña</button>
+        <input type="file" id="btnAbrir" accept=".gst">
+        <button id="btnGuardar">Guardar</button>
+        <button id="btnGuardarComo">Guardar Como</button>
     </div>
     
     <div class="container">
         <div class="editor-container">
-            <textarea id="editor"></textarea> </div>
+            <div id="tabs"></div>
+            <div class="editor-wrapper">
+                <textarea id="editor"></textarea>
+            </div>
+        </div>
         <div class="console-container">
-            <textarea id="consola" class="console" readonly placeholder="Ejecuta tu código para ver la salida..."></textarea> 
+            <h3>Consola</h3>
+            <textarea id="consola" class="console" readonly placeholder="Consola de salida..."></textarea>
         </div>
     </div>
 
