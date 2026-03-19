@@ -4,24 +4,27 @@
     <meta charset="UTF-8">
     <title>GoScript IDE</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        .toolbar { padding: 15px; background: #2c3e50; color: white; }
+        .container { display: flex; flex: 1; }
+        .editor-container, .console-container { flex: 1; border: 1px solid #ccc; display: flex; flex-direction: column; }
+        .CodeMirror { flex: 1; height: auto; font-size: 16px; }
+        textarea.console { flex: 1; background: #1e1e1e; color: #00ff00; padding: 10px; resize: none; font-family: monospace; font-size: 16px; }
+        button, input { padding: 8px; margin-right: 10px; cursor: pointer; border-radius: 10px;}
+    </style>
 </head>
 <body>
-    <div>
-        <button id="btnEjecutar">Ejecutar</button>
-        <input type="file" id="btnAbrir" accept=".gst">
-        <button id="btnGuardar">Guardar</button>
+    <div class="toolbar">
+        <button id="btnEjecutar">Ejecutar</button> <input type="file" id="btnAbrir" accept=".gst"> <button id="btnGuardar">Guardar</button> 
     </div>
     
-    <br>
-
-    <div>
-        <h3>Editor</h3>
-        <textarea id="editor"></textarea>
-    </div>
-
-    <div>
-        <h3>Consola</h3>
-        <textarea id="consola" rows="10" cols="80" readonly></textarea>
+    <div class="container">
+        <div class="editor-container">
+            <textarea id="editor"></textarea> </div>
+        <div class="console-container">
+            <textarea id="consola" class="console" readonly placeholder="Ejecuta tu código para ver la salida..."></textarea> 
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
