@@ -1,0 +1,19 @@
+// backend/models/astNode.js
+class Node {
+    constructor(linea, columna) {
+        this.linea = linea;
+        this.columna = columna;
+    }
+
+    //ejecutar logica nodo
+    interpretar(arbol, tabla) {
+        throw new Error("metodo interpretar");
+    }
+
+    //reporte de AST
+    getAST() {
+        throw new Error("metodo getAST");
+    }
+}
+
+module.exports = Node;

@@ -1,3 +1,8 @@
+%{
+    //MODELOS
+    const Print = require('../models/print');
+%}
+
 /* definición lexica */
 %lex
 %options case-sensitive
@@ -42,6 +47,12 @@ instrucciones
     ;
 
 instruccion
-    : R_PRINT PAR_IZQ CADENA PAR_DER PT_COMA { console.log($3); $$ = "Imprimir: " + $3; }
-    | error { console.error('Error sintáctico'); }
+    : R_PRINT PAR_IZQ expresiones PAR_DER PT_COMA 
+      { $$ = new Print($3, @1.first_line, @1.first_column); }
+    | error { /* Manejo de errores [cite: 138, 169] */ }
+    ;
+
+expresiones
+    : expresiones COMA expresion { $1.push($3); $$ = $1; }
+    | expresion                 { $$ = [$1]; }
     ;
