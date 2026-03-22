@@ -1,11 +1,10 @@
 %{
     //MODELOS
-    const Print = require('../models/print');
-%}
-
-%{
     const Literal = require('../models/literal');
     const Aritmetica = require('../models/aritmetica');
+    const Relacional = require('../models/relacional');
+    const Logica = require('../models/logica');
+    const Print = require('../models/print');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -21,13 +20,36 @@
 
 "int"                       return 'R_INT';
 "fmt.Println"               return 'R_PRINT';
+"true"                      return 'TRUE';
+"false"                     return 'FALSE';
+
+"=="                        return 'IGUAL_IGUAL';
+"!="                        return 'NO_IGUAL';
+"<="                        return 'MENOR_IGUAL';
+">="                        return 'MAYOR_IGUAL';
+"<"                         return 'MENOR';
+">"                         return 'MAYOR';
+
+"&&"                        return 'AND';
+"||"                        return 'OR';
+"!"                         return 'NOT';
+
+"+"                         return 'MAS';
+"-"                         return 'MENOS';
+"*"                         return 'MULT';
+"/"                         return 'DIV';
+"%"                         return 'MOD';
+
 "("                         return 'PAR_IZQ';
 ")"                         return 'PAR_DER';
 "{"                         return 'LLAVE_IZQ';
 "}"                         return 'LLAVE_DER';
 ";"                         return 'PT_COMA';
+","                         return 'COMA';
+
 \"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'CADENA'; }
-[0-9]+                      return 'ENTERO';
+[0-9]+("."[0-9]+)\b         return 'DECIMAL';
+[0-9]+\b                    return 'ENTERO';
 [a-zA-Z_][a-zA-Z0-9_]* return 'IDENTIFICADOR';
 
 <<EOF>>                     return 'EOF';
@@ -35,9 +57,15 @@
 
 /lex
 
-/* Asociación y Precedencia [cite: 577] */
+/* Asociación y Precedencia */
+%left 'OR'
+%left 'AND'
+%right 'NOT'
+%left 'IGUAL_IGUAL' 'NO_IGUAL'
+%left 'MENOR' 'MENOR_IGUAL' 'MAYOR' 'MAYOR_IGUAL'
 %left 'MAS' 'MENOS'
-%left 'MULT' 'DIV'
+%left 'MULT' 'DIV' 'MOD'
+%right 'UNARIO'
 
 %start inicio
 
@@ -55,7 +83,7 @@ instrucciones
 instruccion
     : R_PRINT PAR_IZQ expresiones PAR_DER PT_COMA 
       { $$ = new Print($3, @1.first_line, @1.first_column); }
-    | error { /* Manejo de errores [cite: 138, 169] */ }
+    | error { /* Manejo de errores */ }
     ;
 
 expresiones
@@ -63,22 +91,33 @@ expresiones
     | expresion                 { $$ = [$1]; }
     ;
 
-/* Asociación y Precedencia*/
-%left 'MAS' 'MENOS'
-%left 'MULT' 'DIV' 'MOD'
-%right 'UNARIO' // Para la negación unaria como -5
-
-%%
-
 expresion
-    : expresion MAS expresion       { $$ = new Aritmetica($1, '+', $3, @1.first_line, @1.first_column); }
+    /* Operaciones Lógicas */
+    : expresion AND expresion       { $$ = new Logica($1, '&&', $3, @1.first_line, @1.first_column); }
+    | expresion OR expresion        { $$ = new Logica($1, '||', $3, @1.first_line, @1.first_column); }
+    | NOT expresion                 { $$ = new Logica(null, '!', $2, @1.first_line, @1.first_column); }
+    
+    /* Operaciones Relacionales */
+    | expresion IGUAL_IGUAL expresion   { $$ = new Relacional($1, '==', $3, @1.first_line, @1.first_column); }
+    | expresion NO_IGUAL expresion      { $$ = new Relacional($1, '!=', $3, @1.first_line, @1.first_column); }
+    | expresion MENOR expresion         { $$ = new Relacional($1, '<', $3, @1.first_line, @1.first_column); }
+    | expresion MENOR_IGUAL expresion   { $$ = new Relacional($1, '<=', $3, @1.first_line, @1.first_column); }
+    | expresion MAYOR expresion         { $$ = new Relacional($1, '>', $3, @1.first_line, @1.first_column); }
+    | expresion MAYOR_IGUAL expresion   { $$ = new Relacional($1, '>=', $3, @1.first_line, @1.first_column); }
+    
+    /* Operaciones Aritméticas */
+    | expresion MAS expresion       { $$ = new Aritmetica($1, '+', $3, @1.first_line, @1.first_column); }
     | expresion MENOS expresion     { $$ = new Aritmetica($1, '-', $3, @1.first_line, @1.first_column); }
     | expresion MULT expresion      { $$ = new Aritmetica($1, '*', $3, @1.first_line, @1.first_column); }
     | expresion DIV expresion       { $$ = new Aritmetica($1, '/', $3, @1.first_line, @1.first_column); }
     | expresion MOD expresion       { $$ = new Aritmetica($1, '%', $3, @1.first_line, @1.first_column); }
     | MENOS expresion %prec UNARIO  { $$ = new Aritmetica(null, '-', $2, @1.first_line, @1.first_column); }
+    
+    /* Literales */
     | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
     | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
     | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }
+    | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
+    | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
     ;
