@@ -6,7 +6,11 @@ exports.execute = (req, res) => {
     const { codigo } = req.body;
 
     try {
+        if (!parser.yy) {
+            parser.yy = {};
+        }
         parser.yy.errores = []; 
+
         const instrucciones = parser.parse(codigo);
         const arbol = new Arbol(instrucciones);
         
@@ -46,9 +50,22 @@ exports.execute = (req, res) => {
         });
 
     } catch (error) {
+        let erroresCapturados = [];
+        
+        if (parser.yy && parser.yy.errores && parser.yy.errores.length > 0) {
+            erroresCapturados = parser.yy.errores;
+        } else {
+            erroresCapturados = [{ 
+                tipo: "Error Fatal/Sintáctico", 
+                descripcion: error.message, 
+                linea: 0, 
+                columna: 0 
+            }];
+        }
+
         res.json({
             consola: "Error en el análisis.\n",
-            errores: parser.yy.errores.length > 0 ? parser.yy.errores : [{ tipo: "Error Fatal", descripcion: error.message, linea: 0, columna: 0 }],
+            errores: erroresCapturados,
             simbolos: []
         });
     }

@@ -1,4 +1,5 @@
 const Node = require('./astNode');
+const Excepcion = require('./excepcion');
 
 class Asignacion extends Node {
     constructor(id, expresion, linea, columna) {
@@ -11,14 +12,18 @@ class Asignacion extends Node {
         let simbolo = tabla.obtener(this.id);
         
         if (simbolo === null) {
-            console.error(`Error: Variable ${this.id} no existe.`);
+            arbol.errores.push(new Excepcion("Semántico", `Variable '${this.id}' no existe.`, this.linea, this.columna));
             return null;
         }
 
         let nuevoValor = this.expresion.interpretar(arbol, tabla);
         
+        if (nuevoValor.tipo === 'NIL') {
+            return null; 
+        }
+
         if (simbolo.tipo !== nuevoValor.tipo) {
-            console.error(`Error: No se puede asignar un valor de tipo ${nuevoValor.tipo} a la variable ${this.id} de tipo ${simbolo.tipo}.`);
+            arbol.errores.push(new Excepcion("Semántico", `No se puede asignar un valor de tipo ${nuevoValor.tipo} a la variable '${this.id}' de tipo ${simbolo.tipo}.`, this.linea, this.columna));
             return null;
         }
 

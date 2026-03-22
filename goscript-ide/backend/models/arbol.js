@@ -7,8 +7,8 @@ class Arbol {
         this.tablaGlobal = null;
     }
 
-    actualizarConsola(texto) {
-        this.consola += texto;
+    actualizarConsola(cadena) {
+        this.consola += cadena;
     }
 
     getConsola() {

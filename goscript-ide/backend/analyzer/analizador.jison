@@ -242,6 +242,8 @@ tipo_dato
     | R_FLOAT   { $$ = TIPO_DATO.FLOAT; }
     | R_STRING  { $$ = TIPO_DATO.STRING; }
     | R_BOOL    { $$ = TIPO_DATO.BOOL; }
+    | CORCHETE_IZQ ENTERO CORCHETE_DER tipo_dato { $$ = TIPO_DATO.ARREGLO; }
+    | CORCHETE_IZQ CORCHETE_DER tipo_dato { $$ = TIPO_DATO.ARREGLO; }
     ;
 
 lista_valores_opt

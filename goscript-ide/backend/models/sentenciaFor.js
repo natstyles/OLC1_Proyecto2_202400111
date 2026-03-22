@@ -3,6 +3,7 @@ const Entorno = require('./entorno');
 const Break = require('./break');
 const Continue = require('./continue');
 const { TIPO_DATO } = require('./tipo');
+const Excepcion = require('./excepcion');
 
 class SentenciaFor extends Node {
     constructor(inicializacion, condicion, actualizacion, instrucciones, linea, columna) {
@@ -22,8 +23,10 @@ class SentenciaFor extends Node {
 
         let cond = this.condicion.interpretar(arbol, entornoFor);
 
+        if (cond.tipo === TIPO_DATO.NULL) return null;
+
         if (cond.tipo !== TIPO_DATO.BOOL) {
-            console.error("Error: La condición del for debe ser booleana.");
+            arbol.errores.push(new Excepcion("Semántico", `La condición del 'for' debe ser booleana, se encontró ${cond.tipo}.`, this.linea, this.columna));
             return null;
         }
 
@@ -41,6 +44,9 @@ class SentenciaFor extends Node {
                     continuar = true;
                     break;
                 }
+                if (resultado) {
+                    return resultado;
+                }
             }
             
             if (this.actualizacion) {
@@ -50,7 +56,7 @@ class SentenciaFor extends Node {
             cond = this.condicion.interpretar(arbol, entornoFor);
             
             if (cond.tipo !== TIPO_DATO.BOOL) {
-                console.error("Error: La condición del for debe ser booleana.");
+                arbol.errores.push(new Excepcion("Semántico", `La condición del 'for' debe ser booleana, se encontró ${cond.tipo}.`, this.linea, this.columna));
                 break;
             }
         }

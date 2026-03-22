@@ -3,6 +3,7 @@ const Entorno = require('./entorno');
 const Break = require('./break');
 const Continue = require('./continue');
 const { TIPO_DATO } = require('./tipo');
+const Excepcion = require('./excepcion');
 
 class SentenciaWhile extends Node {
     constructor(condicion, instrucciones, linea, columna) {
@@ -14,8 +15,10 @@ class SentenciaWhile extends Node {
     interpretar(arbol, tabla) {
         let cond = this.condicion.interpretar(arbol, tabla);
 
+        if (cond.tipo === TIPO_DATO.NULL) return null;
+
         if (cond.tipo !== TIPO_DATO.BOOL) {
-            console.error("Error: La condición del while debe ser booleana.");
+            arbol.errores.push(new Excepcion("Semántico", `La condición del 'while' debe ser booleana, se encontró ${cond.tipo}.`, this.linea, this.columna));
             return null;
         }
 
@@ -31,12 +34,15 @@ class SentenciaWhile extends Node {
                 if (resultado instanceof Continue) {
                     break;
                 }
+                if (resultado) {
+                    return resultado; 
+                }
             }
             
             cond = this.condicion.interpretar(arbol, tabla);
             
             if (cond.tipo !== TIPO_DATO.BOOL) {
-                console.error("Error: La condición del while debe ser booleana.");
+                arbol.errores.push(new Excepcion("Semántico", `La condición del 'while' debe ser booleana, se encontró ${cond.tipo}.`, this.linea, this.columna));
                 break;
             }
         }
