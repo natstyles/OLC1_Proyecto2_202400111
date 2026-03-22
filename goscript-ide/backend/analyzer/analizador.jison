@@ -3,6 +3,12 @@
     const Print = require('../models/print');
 %}
 
+%{
+    const Literal = require('../models/literal');
+    const Aritmetica = require('../models/aritmetica');
+    const { TIPO_DATO } = require('../models/tipo');
+%}
+
 /* definición lexica */
 %lex
 %options case-sensitive
@@ -55,4 +61,21 @@ instruccion
 expresiones
     : expresiones COMA expresion { $1.push($3); $$ = $1; }
     | expresion                 { $$ = [$1]; }
+    ;
+
+/* Asociación y Precedencia*/
+%left 'MAS' 'MENOS'
+%left 'MULT' 'DIV'
+%left 'MOD'
+%right 'UNARIO'
+
+%%
+
+expresion
+    : expresion MAS expresion       { $$ = new Aritmetica($1, '+', $3, @1.first_line, @1.first_column); }
+    | expresion MENOS expresion     { $$ = new Aritmetica($1, '-', $3, @1.first_line, @1.first_column); }
+    | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
+    | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
+    | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }
+    | PAR_IZQ expresion PAR_DER     { $$ = $2; }
     ;
