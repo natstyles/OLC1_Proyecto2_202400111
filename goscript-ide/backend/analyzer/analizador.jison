@@ -1,10 +1,13 @@
 %{
-    //MODELOS
+    // MODELOS
     const Literal = require('../models/literal');
     const Aritmetica = require('../models/aritmetica');
     const Relacional = require('../models/relacional');
     const Logica = require('../models/logica');
     const Print = require('../models/print');
+    const Declaracion = require('../models/declaracion');
+    const Acceso = require('../models/acceso');
+    const Asignacion = require('../models/asignacion');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -19,6 +22,10 @@
 [/][*][^*]*[*]+([^/*][^*]*[*]+)*[/]  /* multilinea */
 
 "int"                       return 'R_INT';
+"float64"                   return 'R_FLOAT';
+"string"                    return 'R_STRING';
+"bool"                      return 'R_BOOL';
+"var"                       return 'R_VAR';
 "fmt.Println"               return 'R_PRINT';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
@@ -29,6 +36,8 @@
 ">="                        return 'MAYOR_IGUAL';
 "<"                         return 'MENOR';
 ">"                         return 'MAYOR';
+":="                        return 'DOS_PUNTOS_IGUAL';
+"="                         return 'IGUAL';
 
 "&&"                        return 'AND';
 "||"                        return 'OR';
@@ -83,7 +92,22 @@ instrucciones
 instruccion
     : R_PRINT PAR_IZQ expresiones PAR_DER PT_COMA 
       { $$ = new Print($3, @1.first_line, @1.first_column); }
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion PT_COMA
+      { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
+    | R_VAR IDENTIFICADOR tipo_dato PT_COMA
+      { $$ = new Declaracion($3, $2, null, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion PT_COMA
+      { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR IGUAL expresion PT_COMA
+      { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
     | error { /* Manejo de errores */ }
+    ;
+
+tipo_dato
+    : R_INT     { $$ = TIPO_DATO.INT; }
+    | R_FLOAT   { $$ = TIPO_DATO.FLOAT; }
+    | R_STRING  { $$ = TIPO_DATO.STRING; }
+    | R_BOOL    { $$ = TIPO_DATO.BOOL; }
     ;
 
 expresiones
@@ -113,11 +137,12 @@ expresion
     | expresion MOD expresion       { $$ = new Aritmetica($1, '%', $3, @1.first_line, @1.first_column); }
     | MENOS expresion %prec UNARIO  { $$ = new Aritmetica(null, '-', $2, @1.first_line, @1.first_column); }
     
-    /* Literales */
+    /* Literales y Accesos */
     | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
     | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
     | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
     ;
