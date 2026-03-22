@@ -5,7 +5,9 @@ const TIPO_DATO = {
     BOOL: 'BOOL',
     RUNE: 'RUNE',
     NULL: 'NIL',
-    ARREGLO: 'ARREGLO'
+    ARREGLO: 'ARREGLO',
+    FUNCION: 'FUNCION',
+    VOID: 'VOID'
 };
 
 module.exports = { TIPO_DATO };

@@ -18,6 +18,9 @@
     const Arreglo = require('../models/arreglo');
     const AccesoArreglo = require('../models/accesoArreglo');
     const AsignacionArreglo = require('../models/asignacionArreglo');
+    const Funcion = require('../models/funcion');
+    const Llamada = require('../models/llamada');
+    const Return = require('../models/return');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -46,6 +49,8 @@
 "default"                   return 'R_DEFAULT';
 "break"                     return 'R_BREAK';
 "continue"                  return 'R_CONTINUE';
+"func"                      return 'R_FUNC';
+"return"                    return 'R_RETURN';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
 
@@ -112,7 +117,7 @@ instrucciones
     ;
 
 instruccion
-    : R_PRINT PAR_IZQ expresiones PAR_DER PT_COMA 
+    : R_PRINT PAR_IZQ lista_valores_opt PAR_DER PT_COMA 
       { $$ = new Print($3, @1.first_line, @1.first_column); }
     | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion PT_COMA
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
@@ -128,9 +133,34 @@ instruccion
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
     | instruccion_switch { $$ = $1; }
+    | instruccion_funcion { $$ = $1; }
+    | R_RETURN expresion PT_COMA { $$ = new Return($2, @1.first_line, @1.first_column); }
+    | R_RETURN PT_COMA { $$ = new Return(null, @1.first_line, @1.first_column); }
     | R_BREAK PT_COMA { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
+    | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER PT_COMA { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | error { /* Manejo de errores */ }
+    ;
+
+instruccion_funcion
+    : R_FUNC IDENTIFICADOR PAR_IZQ parametros_opt PAR_DER tipo_dato LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new Funcion($2, $4, $6, $8, @1.first_line, @1.first_column); }
+    | R_FUNC IDENTIFICADOR PAR_IZQ parametros_opt PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new Funcion($2, $4, TIPO_DATO.VOID, $7, @1.first_line, @1.first_column); }
+    ;
+
+parametros_opt
+    : parametros { $$ = $1; }
+    | /* vacio */ { $$ = []; }
+    ;
+
+parametros
+    : parametros COMA parametro { $1.push($3); $$ = $1; }
+    | parametro                 { $$ = [$1]; }
+    ;
+
+parametro
+    : IDENTIFICADOR tipo_dato   { $$ = { id: $1, tipo: $2 }; }
     ;
 
 instruccion_if
@@ -190,6 +220,11 @@ tipo_dato
     | R_BOOL    { $$ = TIPO_DATO.BOOL; }
     ;
 
+lista_valores_opt
+    : expresiones { $$ = $1; }
+    | /* vacio */ { $$ = []; }
+    ;
+
 expresiones
     : expresiones COMA expresion { $1.push($3); $$ = $1; }
     | expresion                 { $$ = [$1]; }
@@ -225,6 +260,7 @@ expresion
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
     | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER { $$ = new AccesoArreglo($1, $3, @1.first_line, @1.first_column); }
-    | CORCHETE_IZQ expresiones CORCHETE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
+    | CORCHETE_IZQ lista_valores_opt CORCHETE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
     ;
