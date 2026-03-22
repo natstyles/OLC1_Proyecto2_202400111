@@ -1,5 +1,7 @@
 const Node = require('./astNode');
 const Entorno = require('./entorno');
+const Break = require('./break');
+const Continue = require('./continue');
 const { TIPO_DATO } = require('./tipo');
 
 class SentenciaFor extends Node {
@@ -27,9 +29,18 @@ class SentenciaFor extends Node {
 
         while (cond.valor === true) {
             const entornoBloque = new Entorno(entornoFor);
+            let continuar = false;
             
             for (let instr of this.instrucciones) {
                 const resultado = instr.interpretar(arbol, entornoBloque);
+                
+                if (resultado instanceof Break) {
+                    return null;
+                }
+                if (resultado instanceof Continue) {
+                    continuar = true;
+                    break;
+                }
             }
             
             if (this.actualizacion) {

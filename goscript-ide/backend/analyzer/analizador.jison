@@ -11,6 +11,8 @@
     const SentenciaIf = require('../models/sentenciaIf');
     const SentenciaWhile = require('../models/sentenciaWhile');
     const SentenciaFor = require('../models/sentenciaFor');
+    const Break = require('../models/break');
+    const Continue = require('../models/continue');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -34,6 +36,8 @@
 "else"                      return 'R_ELSE';
 "while"                     return 'R_WHILE';
 "for"                       return 'R_FOR';
+"break"                     return 'R_BREAK';
+"continue"                  return 'R_CONTINUE';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
 
@@ -110,6 +114,8 @@ instruccion
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
+    | R_BREAK PT_COMA { $$ = new Break(@1.first_line, @1.first_column); }
+    | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
     | error { /* Manejo de errores */ }
     ;
 
