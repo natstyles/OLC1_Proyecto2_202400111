@@ -1,4 +1,3 @@
-// backend/models/astNode.js
 class Node {
     constructor(linea, columna) {
         this.linea = linea;

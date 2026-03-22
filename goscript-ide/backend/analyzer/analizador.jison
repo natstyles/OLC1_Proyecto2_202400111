@@ -10,6 +10,7 @@
     const Asignacion = require('../models/asignacion');
     const SentenciaIf = require('../models/sentenciaIf');
     const SentenciaWhile = require('../models/sentenciaWhile');
+    const SentenciaFor = require('../models/sentenciaFor');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -32,6 +33,7 @@
 "if"                        return 'R_IF';
 "else"                      return 'R_ELSE';
 "while"                     return 'R_WHILE';
+"for"                       return 'R_FOR';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
 
@@ -107,6 +109,7 @@ instruccion
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
+    | instruccion_for { $$ = $1; }
     | error { /* Manejo de errores */ }
     ;
 
@@ -122,6 +125,25 @@ instruccion_if
 instruccion_while
     : R_WHILE PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaWhile($3, $6, @1.first_line, @1.first_column); }
+    ;
+
+instruccion_for
+    : R_FOR PAR_IZQ init_for PT_COMA expresion PT_COMA actualizacion_for PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaFor($3, $5, $7, $10, @1.first_line, @1.first_column); }
+    ;
+
+init_for
+    : R_VAR IDENTIFICADOR tipo_dato IGUAL expresion 
+      { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion 
+      { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR IGUAL expresion 
+      { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
+    ;
+
+actualizacion_for
+    : IDENTIFICADOR IGUAL expresion 
+      { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
     ;
 
 tipo_dato
