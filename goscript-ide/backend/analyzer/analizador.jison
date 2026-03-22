@@ -25,6 +25,7 @@
     const InstanciaStruct = require('../models/instanciaStruct');
     const AccesoStruct = require('../models/accesoStruct');
     const AsignacionStruct = require('../models/asignacionStruct');
+    const Excepcion = require('../models/excepcion');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -96,7 +97,7 @@
 [a-zA-Z_][a-zA-Z0-9_]* return 'IDENTIFICADOR';
 
 <<EOF>>                     return 'EOF';
-.                           { console.error('Error léxico: ' + yytext); }
+.                           { yy.errores.push(new Excepcion("Léxico", "Carácter no válido: " + yytext, yylloc.first_line, yylloc.first_column)); }
 
 /lex
 
@@ -153,7 +154,7 @@ instruccion
     | R_BREAK PT_COMA { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER PT_COMA { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | error { /* Manejo de errores */ }
+    | error PT_COMA { yy.errores.push(new Excepcion("Sintáctico", "Error de sintaxis en: " + yytext, this._$.first_line, this._$.first_column)); $$ = null; }
     ;
 
 lista_atributos

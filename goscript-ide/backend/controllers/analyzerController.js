@@ -6,29 +6,30 @@ exports.execute = (req, res) => {
     const { codigo } = req.body;
 
     try {
+        parser.yy.errores = []; 
         const instrucciones = parser.parse(codigo);
-        const ast = new Arbol(instrucciones);
+        const arbol = new Arbol(instrucciones);
+        
+        arbol.errores = parser.yy.errores; 
+        
         const tablaGlobal = new Entorno(null);
-        ast.tablaGlobal = tablaGlobal;
+        arbol.tablaGlobal = tablaGlobal;
 
-        for (let instruccion of ast.instrucciones) {
-            if (instruccion) {
-                try {
-                    instruccion.interpretar(ast, tablaGlobal);
-                } catch (e) {
-                    ast.errores.push({
-                        descripcion: e.message,
-                        linea: instruccion.linea || 0,
-                        columna: instruccion.columna || 0,
-                        tipo: 'Semántico'
-                    });
-                }
+        for (let instruccion of instrucciones) {
+            if (instruccion && instruccion.constructor.name === 'Funcion') {
+                instruccion.interpretar(arbol, tablaGlobal);
             }
         }
 
-        let listaSimbolos = [];
-        ast.tablaGlobal.tabla.forEach((simbolo, id) => {
-            listaSimbolos.push({
+        for (let instruccion of instrucciones) {
+            if (instruccion && instruccion.constructor.name !== 'Funcion') {
+                instruccion.interpretar(arbol, tablaGlobal);
+            }
+        }
+
+        const simbolos = [];
+        tablaGlobal.tabla.forEach((simbolo, id) => {
+            simbolos.push({
                 id: id,
                 tipoSimbolo: simbolo.tipo === 'FUNCION' ? 'Función' : 'Variable',
                 tipoDato: simbolo.tipo,
@@ -39,18 +40,16 @@ exports.execute = (req, res) => {
         });
 
         res.json({
-            consola: ast.getConsola(),
-            errores: ast.errores,
-            simbolos: listaSimbolos,
-            ast: ast.instrucciones 
+            consola: arbol.getConsola(),
+            errores: arbol.errores,
+            simbolos: simbolos
         });
 
     } catch (error) {
         res.json({
-            consola: "Error en el análisis.",
-            errores: [{ descripcion: error.message, linea: 0, columna: 0, tipo: 'Sintáctico/Léxico' }],
-            simbolos: [],
-            ast: null
+            consola: "Error en el análisis.\n",
+            errores: parser.yy.errores.length > 0 ? parser.yy.errores : [{ tipo: "Error Fatal", descripcion: error.message, linea: 0, columna: 0 }],
+            simbolos: []
         });
     }
 };
