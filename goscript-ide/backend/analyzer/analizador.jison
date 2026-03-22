@@ -9,6 +9,7 @@
     const Acceso = require('../models/acceso');
     const Asignacion = require('../models/asignacion');
     const SentenciaIf = require('../models/sentenciaIf');
+    const SentenciaWhile = require('../models/sentenciaWhile');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -30,6 +31,7 @@
 "fmt.Println"               return 'R_PRINT';
 "if"                        return 'R_IF';
 "else"                      return 'R_ELSE';
+"while"                     return 'R_WHILE';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
 
@@ -104,6 +106,7 @@ instruccion
     | IDENTIFICADOR IGUAL expresion PT_COMA
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
+    | instruccion_while { $$ = $1; }
     | error { /* Manejo de errores */ }
     ;
 
@@ -114,6 +117,11 @@ instruccion_if
       { $$ = new SentenciaIf($3, $6, $10, @1.first_line, @1.first_column); }
     | R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER R_ELSE instruccion_if
       { $$ = new SentenciaIf($3, $6, $9, @1.first_line, @1.first_column); }
+    ;
+
+instruccion_while
+    : R_WHILE PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaWhile($3, $6, @1.first_line, @1.first_column); }
     ;
 
 tipo_dato
