@@ -21,6 +21,10 @@
     const Funcion = require('../models/funcion');
     const Llamada = require('../models/llamada');
     const Return = require('../models/return');
+    const DefinicionStruct = require('../models/definicionStruct');
+    const InstanciaStruct = require('../models/instanciaStruct');
+    const AccesoStruct = require('../models/accesoStruct');
+    const AsignacionStruct = require('../models/asignacionStruct');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -51,6 +55,8 @@
 "continue"                  return 'R_CONTINUE';
 "func"                      return 'R_FUNC';
 "return"                    return 'R_RETURN';
+"type"                      return 'R_TYPE';
+"struct"                    return 'R_STRUCT';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
 
@@ -79,6 +85,7 @@
 "}"                         return 'LLAVE_DER';
 "["                         return 'CORCHETE_IZQ';
 "]"                         return 'CORCHETE_DER';
+"."                         return 'PUNTO';
 ":"                         return 'DOS_PUNTOS';
 ";"                         return 'PT_COMA';
 ","                         return 'COMA';
@@ -102,6 +109,7 @@
 %left 'MAS' 'MENOS'
 %left 'MULT' 'DIV' 'MOD'
 %right 'UNARIO'
+%left 'PUNTO'
 
 %start inicio
 
@@ -121,14 +129,20 @@ instruccion
       { $$ = new Print($3, @1.first_line, @1.first_column); }
     | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion PT_COMA
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
+    | R_VAR IDENTIFICADOR IDENTIFICADOR IGUAL expresion PT_COMA
+      { $$ = new Declaracion('STRUCT', $2, $5, @1.first_line, @1.first_column); }
     | R_VAR IDENTIFICADOR tipo_dato PT_COMA
       { $$ = new Declaracion($3, $2, null, @1.first_line, @1.first_column); }
     | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion PT_COMA
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR IGUAL expresion PT_COMA
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL expresion PT_COMA
+      { $$ = new AsignacionStruct($1, $3, $5, @1.first_line, @1.first_column); }
     | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER IGUAL expresion PT_COMA
       { $$ = new AsignacionArreglo($1, $3, $6, @1.first_line, @1.first_column); }
+    | R_TYPE IDENTIFICADOR R_STRUCT LLAVE_IZQ lista_atributos LLAVE_DER PT_COMA
+      { $$ = new DefinicionStruct($2, $5, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
@@ -140,6 +154,15 @@ instruccion
     | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER PT_COMA { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | error { /* Manejo de errores */ }
+    ;
+
+lista_atributos
+    : lista_atributos atributo PT_COMA { $1.push($2); $$ = $1; }
+    | atributo PT_COMA                 { $$ = [$1]; }
+    ;
+
+atributo
+    : IDENTIFICADOR tipo_dato { $$ = { id: $1, tipo: $2 }; }
     ;
 
 instruccion_funcion
@@ -259,8 +282,19 @@ expresion
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER { $$ = new AccesoArreglo($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }
     | CORCHETE_IZQ lista_valores_opt CORCHETE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
+    ;
+
+lista_valores_struct
+    : lista_valores_struct COMA valor_struct { $1.push($3); $$ = $1; }
+    | valor_struct                           { $$ = [$1]; }
+    ;
+
+valor_struct
+    : IDENTIFICADOR DOS_PUNTOS expresion { $$ = { id: $1, expresion: $3 }; }
     ;

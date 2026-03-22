@@ -7,7 +7,8 @@ const TIPO_DATO = {
     NULL: 'NIL',
     ARREGLO: 'ARREGLO',
     FUNCION: 'FUNCION',
-    VOID: 'VOID'
+    VOID: 'VOID',
+    STRUCT: 'STRUCT'
 };
 
 module.exports = { TIPO_DATO };
