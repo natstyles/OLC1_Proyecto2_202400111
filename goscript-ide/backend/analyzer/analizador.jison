@@ -15,6 +15,9 @@
     const Caso = require('../models/caso');
     const Break = require('../models/break');
     const Continue = require('../models/continue');
+    const Arreglo = require('../models/arreglo');
+    const AccesoArreglo = require('../models/accesoArreglo');
+    const AsignacionArreglo = require('../models/asignacionArreglo');
     const { TIPO_DATO } = require('../models/tipo');
 %}
 
@@ -69,6 +72,8 @@
 ")"                         return 'PAR_DER';
 "{"                         return 'LLAVE_IZQ';
 "}"                         return 'LLAVE_DER';
+"["                         return 'CORCHETE_IZQ';
+"]"                         return 'CORCHETE_DER';
 ":"                         return 'DOS_PUNTOS';
 ";"                         return 'PT_COMA';
 ","                         return 'COMA';
@@ -117,6 +122,8 @@ instruccion
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR IGUAL expresion PT_COMA
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER IGUAL expresion PT_COMA
+      { $$ = new AsignacionArreglo($1, $3, $6, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
@@ -210,12 +217,14 @@ expresion
     | expresion MOD expresion       { $$ = new Aritmetica($1, '%', $3, @1.first_line, @1.first_column); }
     | MENOS expresion %prec UNARIO  { $$ = new Aritmetica(null, '-', $2, @1.first_line, @1.first_column); }
     
-    /* Literales y Accesos */
+    /* Literales, Arreglos y Accesos */
     | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
     | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
     | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER { $$ = new AccesoArreglo($1, $3, @1.first_line, @1.first_column); }
+    | CORCHETE_IZQ expresiones CORCHETE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
     ;
