@@ -11,6 +11,8 @@
     const SentenciaIf = require('../models/sentenciaIf');
     const SentenciaWhile = require('../models/sentenciaWhile');
     const SentenciaFor = require('../models/sentenciaFor');
+    const SentenciaSwitch = require('../models/sentenciaSwitch');
+    const Caso = require('../models/caso');
     const Break = require('../models/break');
     const Continue = require('../models/continue');
     const { TIPO_DATO } = require('../models/tipo');
@@ -36,6 +38,9 @@
 "else"                      return 'R_ELSE';
 "while"                     return 'R_WHILE';
 "for"                       return 'R_FOR';
+"switch"                    return 'R_SWITCH';
+"case"                      return 'R_CASE';
+"default"                   return 'R_DEFAULT';
 "break"                     return 'R_BREAK';
 "continue"                  return 'R_CONTINUE';
 "true"                      return 'TRUE';
@@ -64,6 +69,7 @@
 ")"                         return 'PAR_DER';
 "{"                         return 'LLAVE_IZQ';
 "}"                         return 'LLAVE_DER';
+":"                         return 'DOS_PUNTOS';
 ";"                         return 'PT_COMA';
 ","                         return 'COMA';
 
@@ -114,6 +120,7 @@ instruccion
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
+    | instruccion_switch { $$ = $1; }
     | R_BREAK PT_COMA { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
     | error { /* Manejo de errores */ }
@@ -150,6 +157,23 @@ init_for
 actualizacion_for
     : IDENTIFICADOR IGUAL expresion 
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
+    ;
+
+instruccion_switch
+    : R_SWITCH PAR_IZQ expresion PAR_DER LLAVE_IZQ casos LLAVE_DER
+      { $$ = new SentenciaSwitch($3, $6, @1.first_line, @1.first_column); }
+    ;
+
+casos
+    : casos caso { $1.push($2); $$ = $1; }
+    | caso       { $$ = [$1]; }
+    ;
+
+caso
+    : R_CASE expresion DOS_PUNTOS instrucciones
+      { $$ = new Caso($2, $4, @1.first_line, @1.first_column); }
+    | R_DEFAULT DOS_PUNTOS instrucciones
+      { $$ = new Caso(null, $3, @1.first_line, @1.first_column); }
     ;
 
 tipo_dato
