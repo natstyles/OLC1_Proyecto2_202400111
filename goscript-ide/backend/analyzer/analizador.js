@@ -2,9 +2,9 @@
 var analizador = (function(){
 var parser = {trace: function trace () { },
 yy: {},
-symbols_: {"error":2,"inicio":3,"instrucciones":4,"EOF":5,"instruccion":6,"R_PRINT":7,"PAR_IZQ":8,"CADENA":9,"PAR_DER":10,"PT_COMA":11,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",7:"R_PRINT",8:"PAR_IZQ",9:"CADENA",10:"PAR_DER",11:"PT_COMA"},
-productions_: [0,[3,2],[4,2],[4,1],[6,5],[6,1]],
+symbols_: {"error":2,"inicio":3,"instrucciones":4,"EOF":5,"instruccion":6,"R_PRINT":7,"PAR_IZQ":8,"expresiones":9,"PAR_DER":10,"PT_COMA":11,"COMA":12,"expresion":13,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",7:"R_PRINT",8:"PAR_IZQ",10:"PAR_DER",11:"PT_COMA",12:"COMA",13:"expresion"},
+productions_: [0,[3,2],[4,2],[4,1],[6,5],[6,1],[9,3],[9,1]],
 performAction: function anonymous(yytext,yyleng,yylineno,yy,yystate,$$,_$
 ) {
 
@@ -16,13 +16,17 @@ case 2: $$[$0-1].push($$[$0]); this.$ = $$[$0-1];
 break;
 case 3: this.$ = [$$[$0]]; 
 break;
-case 4: console.log($$[$0-2]); this.$ = "Imprimir: " + $$[$0-2]; 
+case 4: this.$ = new Print($$[$0-2], _$[$0-4].first_line, _$[$0-4].first_column); 
 break;
-case 5: console.error('Error sintáctico'); 
+case 5: /* Manejo de errores [cite: 138, 169] */ 
+break;
+case 6: $$[$0-2].push($$[$0]); this.$ = $$[$0-2]; 
+break;
+case 7: this.$ = [$$[$0]]; 
 break;
 }
 },
-table: [{2:[1,5],3:1,4:2,6:3,7:[1,4]},{1:[3]},{2:[1,5],5:[1,6],6:7,7:[1,4]},{2:[2,3],5:[2,3],7:[2,3]},{8:[1,8]},{2:[2,5],5:[2,5],7:[2,5]},{1:[2,1]},{2:[2,2],5:[2,2],7:[2,2]},{9:[1,9]},{10:[1,10]},{11:[1,11]},{2:[2,4],5:[2,4],7:[2,4]}],
+table: [{2:[1,5],3:1,4:2,6:3,7:[1,4]},{1:[3]},{2:[1,5],5:[1,6],6:7,7:[1,4]},{2:[2,3],5:[2,3],7:[2,3]},{8:[1,8]},{2:[2,5],5:[2,5],7:[2,5]},{1:[2,1]},{2:[2,2],5:[2,2],7:[2,2]},{9:9,13:[1,10]},{10:[1,11],12:[1,12]},{10:[2,7],12:[2,7]},{11:[1,13]},{13:[1,14]},{2:[2,4],5:[2,4],7:[2,4]},{10:[2,6],12:[2,6]}],
 defaultActions: {6:[2,1]},
 parseError: function parseError (str, hash) {
     throw new Error(str);
@@ -218,6 +222,9 @@ parse: function parse (input) {
 
     return true;
 }};
+
+    //MODELOS
+    const Print = require('../models/print');
 /* Jison generated lexer */
 var lexer = (function(){
 var lexer = ({EOF:1,
@@ -412,7 +419,7 @@ case 8:return 'LLAVE_DER';
 break;
 case 9:return 11;
 break;
-case 10: yy_.yytext = yy_.yytext.substr(1, yy_.yyleng-2); return 9; 
+case 10: yy_.yytext = yy_.yytext.substr(1, yy_.yyleng-2); return 'CADENA'; 
 break;
 case 11:return 'ENTERO';
 break;

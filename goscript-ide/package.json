@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-grammar": "jison backend/analyzer/analizador.jison -o backend/analyzer/analizador.js",
-    "start": "npx nodemon backend/app.js"
+    "dev": "nodemon backend/app.js"
   },
   "keywords": [],
   "author": "",
