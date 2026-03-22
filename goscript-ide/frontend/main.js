@@ -174,12 +174,9 @@ contadorNuevos++;
 crearPestana(`Nuevo ${contadorNuevos}`, '', true);
 
 function verReporte(tipo) {
-    // Desactivar todas las pestañas y contenidos
     document.querySelectorAll('.report-tab').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.report-content').forEach(cont => cont.classList.remove('active'));
 
-    // Activar la seleccionada
-    // Nota: El botón se activa por orden de aparición en este caso simplificado
     const botones = document.querySelectorAll('.report-tab');
     if(tipo === 'consola') botones[0].classList.add('active');
     if(tipo === 'errores') botones[1].classList.add('active');
@@ -188,3 +185,58 @@ function verReporte(tipo) {
 
     document.getElementById(`cont-${tipo}`).classList.add('active');
 }
+
+//ejecutar
+document.getElementById('btnEjecutar').addEventListener('click', async () => {
+    const codigo = editor.getValue();
+    
+    try {
+        const response = await fetch('http://localhost:3000/api/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo })
+        });
+        
+        const data = await response.json();
+        
+        //escribir en consola
+        document.getElementById('consola').value = data.consola || "";
+        
+        //llenar tabla de errores
+        const tbodyErrores = document.querySelector('#tabla-errores tbody');
+        tbodyErrores.innerHTML = '';
+        if (data.errores && data.errores.length > 0) {
+            data.errores.forEach((err, index) => {
+                tbodyErrores.innerHTML += `<tr>
+                    <td>${index + 1}</td>
+                    <td>${err.descripcion || err.message}</td>
+                    <td>${err.linea}</td>
+                    <td>${err.columna}</td>
+                    <td>${err.tipo || 'Sintáctico/Léxico'}</td>
+                </tr>`;
+            });
+        }
+        
+        //llenar tabla simbolos
+        const tbodySimbolos = document.querySelector('#tabla-simbolos tbody');
+        tbodySimbolos.innerHTML = '';
+        if (data.simbolos && data.simbolos.length > 0) {
+            data.simbolos.forEach((simb) => {
+                tbodySimbolos.innerHTML += `<tr>
+                    <td>${simb.id}</td>
+                    <td>${simb.tipoSimbolo}</td>
+                    <td>${simb.tipoDato}</td>
+                    <td>${simb.ambito}</td>
+                    <td>${simb.linea}</td>
+                    <td>${simb.columna}</td>
+                </tr>`;
+            });
+        }
+
+        verReporte('consola');
+
+    } catch (error) {
+        console.error('Error de conexión:', error);
+        document.getElementById('consola').value = "Error al conectar con el servidor backend.";
+    }
+});
