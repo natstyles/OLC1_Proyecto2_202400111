@@ -65,15 +65,18 @@ expresiones
 
 /* Asociación y Precedencia*/
 %left 'MAS' 'MENOS'
-%left 'MULT' 'DIV'
-%left 'MOD'
-%right 'UNARIO'
+%left 'MULT' 'DIV' 'MOD'
+%right 'UNARIO' // Para la negación unaria como -5
 
 %%
 
 expresion
     : expresion MAS expresion       { $$ = new Aritmetica($1, '+', $3, @1.first_line, @1.first_column); }
     | expresion MENOS expresion     { $$ = new Aritmetica($1, '-', $3, @1.first_line, @1.first_column); }
+    | expresion MULT expresion      { $$ = new Aritmetica($1, '*', $3, @1.first_line, @1.first_column); }
+    | expresion DIV expresion       { $$ = new Aritmetica($1, '/', $3, @1.first_line, @1.first_column); }
+    | expresion MOD expresion       { $$ = new Aritmetica($1, '%', $3, @1.first_line, @1.first_column); }
+    | MENOS expresion %prec UNARIO  { $$ = new Aritmetica(null, '-', $2, @1.first_line, @1.first_column); }
     | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
     | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
     | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }

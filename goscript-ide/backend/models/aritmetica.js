@@ -10,31 +10,66 @@ class Aritmetica extends Node {
     }
 
     interpretar(arbol, tabla) {
-        const nodoIzq = this.izq.interpretar(arbol, tabla);
+        const nodoIzq = this.izq ? this.izq.interpretar(arbol, tabla) : null;
         const nodoDer = this.der.interpretar(arbol, tabla);
 
-        //SUMA
-        if (this.operacion === '+') {
-            return this.sumar(nodoIzq, nodoDer);
+        switch (this.operacion) {
+            case '+': return this.sumar(nodoIzq, nodoDer);
+            case '-': return this.restar(nodoIzq, nodoDer); //maneja binaria y unaria
+            case '*': return this.multiplicar(nodoIzq, nodoDer);
+            case '/': return this.dividir(nodoIzq, nodoDer);
+            case '%': return this.modulo(nodoIzq, nodoDer);
+            default: return { tipo: TIPO_DATO.NULL, valor: null };
         }
     }
 
-    //REGLAS DE CONVERSIÓN DE DATOS
     sumar(izq, der) {
-        //int + int = int
-        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) {
+        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
             return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) + Number(der.valor) };
-        }
-        // Regla: float64 + int = float64 [cite: 415]
-        if (izq.tipo === TIPO_DATO.FLOAT && der.tipo === TIPO_DATO.INT) {
-            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) + Number(der.valor) };
-        }
-        // Regla: string + cualquier cosa = string (Concatenación) [cite: 415]
-        if (izq.tipo === TIPO_DATO.STRING || der.tipo === TIPO_DATO.STRING) {
+        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) 
+            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) + parseFloat(der.valor) };
+        if (izq.tipo === TIPO_DATO.STRING || der.tipo === TIPO_DATO.STRING) 
             return { tipo: TIPO_DATO.STRING, valor: String(izq.valor) + String(der.valor) };
+        return { tipo: TIPO_DATO.NULL, valor: null };
+    }
+
+    restar(izq, der) {
+        //negación -expresion
+        if (!izq) {
+            if (der.tipo === TIPO_DATO.INT) return { tipo: TIPO_DATO.INT, valor: -Number(der.valor) };
+            if (der.tipo === TIPO_DATO.FLOAT) return { tipo: TIPO_DATO.FLOAT, valor: -parseFloat(der.valor) };
         }
-        
-        // Si no coincide con las tablas del enunciado, es un error léxico/sintáctico (según tu tutor) [cite: 446]
+        //Resta bin
+        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
+            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) - Number(der.valor) };
+        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) 
+            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) - parseFloat(der.valor) };
+        return { tipo: TIPO_DATO.NULL, valor: null };
+    }
+
+    multiplicar(izq, der) {
+        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
+            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) * Number(der.valor) };
+        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) 
+            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) * parseFloat(der.valor) };
+        return { tipo: TIPO_DATO.NULL, valor: null };
+    }
+
+    dividir(izq, der) {
+        if (Number(der.valor) === 0) {
+            console.error("Error: División entre cero");
+            return { tipo: TIPO_DATO.NULL, valor: null };
+        }
+        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
+            return { tipo: TIPO_DATO.INT, valor: Math.trunc(Number(izq.valor) / Number(der.valor)) };
+        return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) / parseFloat(der.valor) };
+    }
+
+    modulo(izq, der) {
+        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) {
+            if (Number(der.valor) === 0) return { tipo: TIPO_DATO.NULL, valor: null };
+            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) % Number(der.valor) };
+        }
         return { tipo: TIPO_DATO.NULL, valor: null };
     }
 }
