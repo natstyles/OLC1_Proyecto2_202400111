@@ -35,8 +35,9 @@
 
 %%
 
-\s+                         /* ignoro espacios en blanco */
-"//".* /* comentario una linea */
+[ \t\r]+                    /* ignoro espacios en blanco */
+\n+                         /* ignoro saltos de línea */
+"//".*                      /* comentario una linea */
 [/][*][^*]*[*]+([^/*][^*]*[*]+)*[/]  /* multilinea */
 
 "int"                       return 'R_INT';
@@ -94,10 +95,14 @@
 \"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'CADENA'; }
 [0-9]+("."[0-9]+)\b         return 'DECIMAL';
 [0-9]+\b                    return 'ENTERO';
-[a-zA-Z_][a-zA-Z0-9_]* return 'IDENTIFICADOR';
+[a-zA-Z_][a-zA-Z0-9_]*      return 'IDENTIFICADOR';
 
 <<EOF>>                     return 'EOF';
-.                           { yy.errores.push(new Excepcion("Léxico", "Carácter no válido: " + yytext, yylloc.first_line, yylloc.first_column)); }
+.                           { 
+                                if (!yy.errores) yy.errores = [];
+                                yy.errores.push(new Excepcion("Léxico", "Carácter no válido: " + yytext, this.yylloc.first_line, this.yylloc.first_column + 1));
+                                return this.lex();
+                            }
 
 /lex
 
@@ -121,12 +126,12 @@ inicio
     ;
 
 instrucciones
-    : instrucciones instruccion { $1.push($2); $$ = $1; }
-    | instruccion              { $$ = [$1]; }
+    : instrucciones instruccion { if ($2 != null) $1.push($2); $$ = $1; }
+    | instruccion              { $$ = $1 != null ? [$1] : []; }
     ;
 
 instruccion
-    : R_PRINT PAR_IZQ lista_valores_opt PAR_DER PT_COMA 
+    : R_PRINT PAR_IZQ lista_valores_opt PAR_DER PT_COMA
       { $$ = new Print($3, @1.first_line, @1.first_column); }
     | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion PT_COMA
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
@@ -154,7 +159,18 @@ instruccion
     | R_BREAK PT_COMA { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER PT_COMA { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | error PT_COMA { yy.errores.push(new Excepcion("Sintáctico", "Error de sintaxis en: " + yytext, this._$.first_line, this._$.first_column)); $$ = null; }
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL PT_COMA { $$ = null; }
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL PT_COMA { $$ = null; }
+    | IDENTIFICADOR IGUAL PT_COMA { $$ = null; }
+
+    /* recuperación de declaraciones y asignaciones con expresion rota */
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL error PT_COMA { $$ = null; }
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL error PT_COMA { $$ = null; }
+    | IDENTIFICADOR IGUAL error PT_COMA { $$ = null; }
+
+    /* recuperación general */
+    | error PT_COMA
+      { $$ = null; }
     ;
 
 lista_atributos
