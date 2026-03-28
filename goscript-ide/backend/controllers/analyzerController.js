@@ -90,7 +90,8 @@ exports.execute = (req, res) => {
         res.json({
             consola: arbol.getConsola(),
             errores: arbol.errores,
-            simbolos: simbolos
+            simbolos: simbolos,
+            ast: arbol.getAST() 
         });
 
     } catch (error) {
@@ -107,7 +108,8 @@ exports.execute = (req, res) => {
         res.json({
             consola: "Error en el análisis.\n",
             errores: erroresCapturados,
-            simbolos: []
+            simbolos: [],
+            ast: "" 
         });
     }
 };

@@ -32,6 +32,21 @@ class Asignacion extends Node {
         
         return null;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Asignación\\n'${this.id}'"];\n`;
+        
+        dot += `${padre} -> ${miId};\n`;
+
+        //llamada recursiva a la operacion asignada
+        if (this.expresion && typeof this.expresion.getAST === 'function') {
+            dot += this.expresion.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Asignacion;

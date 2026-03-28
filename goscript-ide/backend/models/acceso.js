@@ -18,6 +18,13 @@ class Acceso extends Node {
         
         return { tipo: simbolo.tipo, valor: simbolo.valor };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        let dot = `${miId} [label="Acceso\\n'${this.id}'"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+        return dot;
+    }
 }
 
 module.exports = Acceso;

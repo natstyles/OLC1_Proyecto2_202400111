@@ -37,6 +37,26 @@ class Logica extends Node {
 
         return { tipo: TIPO_DATO.BOOL, valor: resultado };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Lógica\\n'${this.operacion}'"];\n`;
+        
+        dot += `${padre} -> ${miId};\n`;
+
+        //getast si hay operando izq
+        if (this.izq && typeof this.izq.getAST === 'function') {
+            dot += this.izq.getAST(miId, contador);
+        }
+
+        //operando derecho
+        if (this.der && typeof this.der.getAST === 'function') {
+            dot += this.der.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Logica;

@@ -56,6 +56,27 @@ class Llamada extends Node {
 
         return { tipo: TIPO_DATO.VOID, valor: null };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Llamada\\n'${this.id}'"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.parametros && this.parametros.length > 0) {
+            let paramsId = `n${contador.c++}`;
+            dot += `${paramsId} [label="Argumentos"];\n`;
+            dot += `${miId} -> ${paramsId};\n`;
+
+            for (let param of this.parametros) {
+                if (param && typeof param.getAST === 'function') {
+                    dot += param.getAST(paramsId, contador);
+                }
+            }
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Llamada;

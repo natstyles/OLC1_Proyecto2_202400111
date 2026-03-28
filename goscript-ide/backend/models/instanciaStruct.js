@@ -30,6 +30,28 @@ class InstanciaStruct extends Node {
 
         return { tipo: TIPO_DATO.STRUCT, valor: entornoStruct, tipoStruct: this.idStruct };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        let dot = `${miId} [label="Instancia Struct\\n${this.idStruct}"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.asignaciones && this.asignaciones.length > 0) {
+            let asigId = `n${contador.c++}`;
+            dot += `${asigId} [label="Asignaciones"];\n`;
+            dot += `${miId} -> ${asigId};\n`;
+
+            for (let asig of this.asignaciones) {
+                let aId = `n${contador.c++}`;
+                dot += `${aId} [label="${asig.id}"];\n`;
+                dot += `${asigId} -> ${aId};\n`;
+                if (asig.expresion && typeof asig.expresion.getAST === 'function') {
+                    dot += asig.expresion.getAST(aId, contador);
+                }
+            }
+        }
+        return dot;
+    }
 }
 
 module.exports = InstanciaStruct;

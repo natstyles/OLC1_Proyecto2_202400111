@@ -15,6 +15,24 @@ class Arreglo extends Node {
         }
         return { tipo: TIPO_DATO.ARREGLO, valor: valores };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        let dot = `${miId} [label="Arreglo"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.elementos && this.elementos.length > 0) {
+            let elemsId = `n${contador.c++}`;
+            dot += `${elemsId} [label="Elementos"];\n`;
+            dot += `${miId} -> ${elemsId};\n`;
+            for (let el of this.elementos) {
+                if (el && typeof el.getAST === 'function') {
+                    dot += el.getAST(elemsId, contador);
+                }
+            }
+        }
+        return dot;
+    }
 }
 
 module.exports = Arreglo;

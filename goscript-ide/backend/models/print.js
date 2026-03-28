@@ -32,6 +32,25 @@ class Print extends Node {
         arbol.actualizarConsola(salida + "\n");
         return null;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Print"];\n`;
+        
+        dot += `${padre} -> ${miId};\n`;
+
+        //recorremos cada print y ponemos como hijo
+        if (this.expresiones && Array.isArray(this.expresiones)) {
+            for (let exp of this.expresiones) {
+                if (exp && typeof exp.getAST === 'function') {
+                    dot += exp.getAST(miId, contador);
+                }
+            }
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Print;

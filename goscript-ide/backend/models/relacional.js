@@ -38,6 +38,26 @@ class Relacional extends Node {
 
         return { tipo: TIPO_DATO.BOOL, valor: resultado };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Relacional\\n'${this.operacion}'"];\n`;
+        
+        dot += `${padre} -> ${miId};\n`;
+
+        //operando izquierdo
+        if (this.izq && typeof this.izq.getAST === 'function') {
+            dot += this.izq.getAST(miId, contador);
+        }
+
+        //operando derecho
+        if (this.der && typeof this.der.getAST === 'function') {
+            dot += this.der.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Relacional;

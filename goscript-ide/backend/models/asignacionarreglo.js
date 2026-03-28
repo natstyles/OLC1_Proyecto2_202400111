@@ -36,6 +36,28 @@ class AsignacionArreglo extends Node {
         
         return null;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        let dot = `${miId} [label="Asignación Arreglo\\n${this.id}"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.indice && typeof this.indice.getAST === 'function') {
+            let idxId = `n${contador.c++}`;
+            dot += `${idxId} [label="Índice"];\n`;
+            dot += `${miId} -> ${idxId};\n`;
+            dot += this.indice.getAST(idxId, contador);
+        }
+
+        if (this.expresion && typeof this.expresion.getAST === 'function') {
+            let expId = `n${contador.c++}`;
+            dot += `${expId} [label="Expresión"];\n`;
+            dot += `${miId} -> ${expId};\n`;
+            dot += this.expresion.getAST(expId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = AsignacionArreglo;

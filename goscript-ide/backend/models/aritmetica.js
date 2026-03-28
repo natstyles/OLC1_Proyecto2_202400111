@@ -93,6 +93,26 @@ class Aritmetica extends Node {
         arbol.errores.push(new Excepcion("Semántico", `Módulo no válido entre ${izq.tipo} y ${der.tipo}. Ambos deben ser enteros.`, this.linea, this.columna));
         return { tipo: TIPO_DATO.NULL, valor: null };
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Aritmética\\n'${this.operacion}'"];\n`;
+        
+        dot += `${padre} -> ${miId};\n`;
+
+        //si hay operando izquierdo, llamada recursiva al AST
+        if (this.izq && typeof this.izq.getAST === 'function') {
+            dot += this.izq.getAST(miId, contador);
+        }
+
+        // llamada recursiva al operando derecho
+        if (this.der && typeof this.der.getAST === 'function') {
+            dot += this.der.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Aritmetica;

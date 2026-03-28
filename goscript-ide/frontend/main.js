@@ -155,21 +155,6 @@ btnGuardarComo.addEventListener('click', () => {
     ejecutarGuardarComo(archivos[archivoActualIndex]);
 });
 
-btnEjecutar.addEventListener('click', async () => {
-    if (archivoActualIndex === -1) return;
-    
-    const codigo = archivos[archivoActualIndex].contenido;
-    
-    const response = await fetch('http://localhost:3000/api/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ codigo })
-    });
-    
-    const data = await response.json();
-    consolaTextArea.value = data.consola;
-});
-
 contadorNuevos++;
 crearPestana(`Nuevo ${contadorNuevos}`, '', true);
 
@@ -231,6 +216,29 @@ document.getElementById('btnEjecutar').addEventListener('click', async () => {
                     <td>${simb.columna}</td>
                 </tr>`;
             });
+        }
+
+        //VIZ JS PARA RENDER
+        const canvasAst = document.getElementById("canvas-ast");
+        if (data.ast && data.ast.trim() !== "") {
+            canvasAst.innerHTML = "<p style='color: #666; margin-top: 20px;'>Generando árbol...</p>"; 
+            
+            var viz = new Viz();
+            viz.renderSVGElement(data.ast)
+            .then(function(element) {
+                canvasAst.innerHTML = ""; 
+                // Ajustamos el SVG para que sea responsivo
+                element.style.maxWidth = "100%";
+                element.style.height = "auto";
+                canvasAst.appendChild(element);
+            })
+            .catch(error => {
+                viz = new Viz(); // Reiniciamos la instancia en caso de fallo
+                console.error("Error al renderizar el AST:", error);
+                canvasAst.innerHTML = "<p style='color: red; margin-top: 20px;'>Error al dibujar el árbol de sintaxis.</p>";
+            });
+        } else {
+            canvasAst.innerHTML = "<p style='color: #666; margin-top: 20px;'>No se generó el AST.</p>";
         }
 
         verReporte('consola');

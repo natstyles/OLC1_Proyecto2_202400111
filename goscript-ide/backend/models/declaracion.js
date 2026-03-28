@@ -42,6 +42,28 @@ class Declaracion extends Node {
         
         return null;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Declaración\\n'${this.id}'"];\n`;
+        
+        dot += `${padre} -> ${miId};\n`;
+
+        //nodo hijo si la declaración tiene dato explicito
+        if (this.tipoDato) {
+            let idTipo = `n${contador.c++}`;
+            dot += `${idTipo} [label="Tipo: ${this.tipoDato}"];\n`;
+            dot += `${miId} -> ${idTipo};\n`;
+        }
+
+        //getAST si la declaración tiene expresión
+        if (this.expresion && typeof this.expresion.getAST === 'function') {
+            dot += this.expresion.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Declaracion;

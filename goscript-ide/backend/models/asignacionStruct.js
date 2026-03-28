@@ -20,6 +20,18 @@ class AsignacionStruct extends Node {
 
         return null;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        let dot = `${miId} [label="Asignación Struct\\n${this.idVariable}.${this.atributo}"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.expresion && typeof this.expresion.getAST === 'function') {
+            dot += this.expresion.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = AsignacionStruct;

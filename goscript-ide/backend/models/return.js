@@ -13,6 +13,19 @@ class Return extends Node {
         }
         return this;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Return"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.expresion && typeof this.expresion.getAST === 'function') {
+            dot += this.expresion.getAST(miId, contador);
+        }
+
+        return dot;
+    }
 }
 
 module.exports = Return;

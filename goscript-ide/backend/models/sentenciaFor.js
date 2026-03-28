@@ -63,6 +63,48 @@ class SentenciaFor extends Node {
         
         return null;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        
+        let dot = `${miId} [label="Sentencia For"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+
+        if (this.inicializacion && typeof this.inicializacion.getAST === 'function') {
+            let initId = `n${contador.c++}`;
+            dot += `${initId} [label="Inicialización"];\n`;
+            dot += `${miId} -> ${initId};\n`;
+            dot += this.inicializacion.getAST(initId, contador);
+        }
+
+        if (this.condicion && typeof this.condicion.getAST === 'function') {
+            let condId = `n${contador.c++}`;
+            dot += `${condId} [label="Condición"];\n`;
+            dot += `${miId} -> ${condId};\n`;
+            dot += this.condicion.getAST(condId, contador);
+        }
+
+        if (this.actualizacion && typeof this.actualizacion.getAST === 'function') {
+            let actId = `n${contador.c++}`;
+            dot += `${actId} [label="Actualización"];\n`;
+            dot += `${miId} -> ${actId};\n`;
+            dot += this.actualizacion.getAST(actId, contador);
+        }
+
+        if (this.instrucciones && this.instrucciones.length > 0) {
+            let instrId = `n${contador.c++}`;
+            dot += `${instrId} [label="Instrucciones"];\n`;
+            dot += `${miId} -> ${instrId};\n`;
+            
+            for (let instr of this.instrucciones) {
+                if (instr && typeof instr.getAST === 'function') {
+                    dot += instr.getAST(instrId, contador);
+                }
+            }
+        }
+
+        return dot;
+    }
 }
 
 module.exports = SentenciaFor;

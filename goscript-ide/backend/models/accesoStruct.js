@@ -23,6 +23,13 @@ class AccesoStruct extends Node {
 
         return valorAtributo;
     }
+
+    getAST(padre, contador) {
+        let miId = `n${contador.c++}`;
+        let dot = `${miId} [label="Acceso Struct\\n${this.idVariable}.${this.atributo}"];\n`;
+        dot += `${padre} -> ${miId};\n`;
+        return dot;
+    }
 }
 
 module.exports = AccesoStruct;
