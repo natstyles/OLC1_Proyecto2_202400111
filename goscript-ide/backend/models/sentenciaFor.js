@@ -15,7 +15,8 @@ class SentenciaFor extends Node {
     }
 
     interpretar(arbol, tabla) {
-        const entornoFor = new Entorno(tabla);
+        // Le damos el nombre "For" al entorno donde vive la variable de inicialización
+        const entornoFor = new Entorno(tabla, "For");
 
         if (this.inicializacion) {
             this.inicializacion.interpretar(arbol, entornoFor);
@@ -31,7 +32,8 @@ class SentenciaFor extends Node {
         }
 
         while (cond.valor === true) {
-            const entornoBloque = new Entorno(entornoFor);
+            // Le damos el nombre "For" (o "For Bloque") al entorno de las instrucciones internas
+            const entornoBloque = new Entorno(entornoFor, "For");
             let continuar = false;
             
             for (let instr of this.instrucciones) {

@@ -75,17 +75,7 @@ exports.execute = (req, res) => {
             }
         }
 
-        const simbolos = [];
-        tablaGlobal.tabla.forEach((simbolo, id) => {
-            simbolos.push({
-                id: id,
-                tipoSimbolo: simbolo.tipo === 'FUNCION' ? 'Función' : 'Variable',
-                tipoDato: simbolo.tipo,
-                ambito: 'Global',
-                linea: simbolo.linea,
-                columna: simbolo.columna
-            });
-        });
+        const simbolos = tablaGlobal.listaSimbolosGlobal;
 
         res.json({
             consola: arbol.getConsola(),

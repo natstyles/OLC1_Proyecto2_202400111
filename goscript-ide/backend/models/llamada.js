@@ -20,7 +20,7 @@ class Llamada extends Node {
         }
 
         let funcion = funcSimbolo.valor;
-        let entornoLocal = new Entorno(tabla);
+        let entornoLocal = new Entorno(tabla, "Función " + this.id);
 
         if (this.parametros.length !== funcion.parametros.length) {
             console.error(`Error: Cantidad de parámetros incorrecta en llamada a ${this.id}.`);

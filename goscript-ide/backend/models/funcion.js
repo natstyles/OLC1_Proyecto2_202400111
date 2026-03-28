@@ -12,7 +12,7 @@ class Funcion extends Node {
     }
 
     interpretar(arbol, tabla) {
-        const simbolo = new Simbolo(TIPO_DATO.FUNCION, this.id, this, this.linea, this.columna);
+        const simbolo = new Simbolo(TIPO_DATO.FUNCION, this.id, this, this.linea, this.columna, tabla.nombre || "Global");
         tabla.guardar(this.id, simbolo);
         return null;
     }

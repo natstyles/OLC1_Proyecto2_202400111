@@ -18,7 +18,7 @@ class SentenciaSwitch extends Node {
             if (caso.expresion) {
                 let exprCaso = caso.expresion.interpretar(arbol, tabla);
                 if (exprSwitch.valor == exprCaso.valor) {
-                    const nuevoEntorno = new Entorno(tabla);
+                    const nuevoEntorno = new Entorno(tabla, "Case");
                     for (let instr of caso.instrucciones) {
                         const res = instr.interpretar(arbol, nuevoEntorno);
                         if (res instanceof Break) return null;
@@ -32,7 +32,7 @@ class SentenciaSwitch extends Node {
         for (let i = 0; i < this.casos.length; i++) {
             let caso = this.casos[i];
             if (!caso.expresion) {
-                const nuevoEntorno = new Entorno(tabla);
+                const nuevoEntorno = new Entorno(tabla, "Default");
                 for (let instr of caso.instrucciones) {
                     const res = instr.interpretar(arbol, nuevoEntorno);
                     if (res instanceof Break) return null;

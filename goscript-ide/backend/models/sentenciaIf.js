@@ -22,17 +22,18 @@ class SentenciaIf extends Node {
         }
 
         if (cond.valor === true) {
-            const nuevoEntorno = new Entorno(tabla);
+            const nuevoEntorno = new Entorno(tabla, "If");
             for (let instr of this.instruccionesIf) {
                 const res = instr.interpretar(arbol, nuevoEntorno);
                 if (res) return res; 
             }
         } else if (this.instruccionesElse != null) {
-            const nuevoEntorno = new Entorno(tabla);
             if (this.instruccionesElse instanceof SentenciaIf) {
+                const nuevoEntorno = new Entorno(tabla, "Else If");
                 const res = this.instruccionesElse.interpretar(arbol, nuevoEntorno);
                 if (res) return res;
             } else {
+                const nuevoEntorno = new Entorno(tabla, "Else");
                 for (let instr of this.instruccionesElse) {
                     const res = instr.interpretar(arbol, nuevoEntorno);
                     if (res) return res;

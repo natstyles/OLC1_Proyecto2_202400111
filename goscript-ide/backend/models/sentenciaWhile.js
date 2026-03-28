@@ -23,7 +23,7 @@ class SentenciaWhile extends Node {
         }
 
         while (cond.valor === true) {
-            const nuevoEntorno = new Entorno(tabla);
+            const nuevoEntorno = new Entorno(tabla, "While");
             
             for (let instr of this.instrucciones) {
                 const resultado = instr.interpretar(arbol, nuevoEntorno);
