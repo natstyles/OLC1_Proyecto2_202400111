@@ -28,13 +28,31 @@ class Aritmetica extends Node {
         }
     }
 
+    getValorNumerico(nodo) {
+        if (nodo.tipo === TIPO_DATO.INT || nodo.tipo === TIPO_DATO.FLOAT) {
+            return Number(nodo.valor);
+        }
+        if (nodo.tipo === TIPO_DATO.BOOL) {
+            return nodo.valor === true || String(nodo.valor).toLowerCase() === 'true' ? 1 : 0;
+        }
+        if (nodo.tipo === TIPO_DATO.RUNE) {
+            return String(nodo.valor).charCodeAt(0);
+        }
+        return null;
+    }
+
     sumar(izq, der, arbol) {
-        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
-            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) + Number(der.valor) };
-        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) 
-            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) + parseFloat(der.valor) };
-        if (izq.tipo === TIPO_DATO.STRING || der.tipo === TIPO_DATO.STRING) 
+        if (izq.tipo === TIPO_DATO.STRING || der.tipo === TIPO_DATO.STRING) {
             return { tipo: TIPO_DATO.STRING, valor: String(izq.valor) + String(der.valor) };
+        }
+        
+        let valNumIzq = this.getValorNumerico(izq);
+        let valNumDer = this.getValorNumerico(der);
+        
+        if (valNumIzq !== null && valNumDer !== null) {
+            let tipoRes = (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) ? TIPO_DATO.FLOAT : TIPO_DATO.INT;
+            return { tipo: tipoRes, valor: valNumIzq + valNumDer };
+        }
         
         arbol.errores.push(new Excepcion("Semántico", `Suma no válida entre ${izq.tipo} y ${der.tipo}`, this.linea, this.columna));
         return { tipo: TIPO_DATO.NULL, valor: null };
@@ -42,52 +60,72 @@ class Aritmetica extends Node {
 
     restar(izq, der, arbol) {
         if (!izq) {
-            if (der.tipo === TIPO_DATO.INT) return { tipo: TIPO_DATO.INT, valor: -Number(der.valor) };
-            if (der.tipo === TIPO_DATO.FLOAT) return { tipo: TIPO_DATO.FLOAT, valor: -parseFloat(der.valor) };
+            let valNumDer = this.getValorNumerico(der);
+            if (valNumDer !== null && (der.tipo === TIPO_DATO.INT || der.tipo === TIPO_DATO.FLOAT)) {
+                return { tipo: der.tipo, valor: -valNumDer };
+            }
             arbol.errores.push(new Excepcion("Semántico", `Negación unaria no válida para ${der.tipo}`, this.linea, this.columna));
             return { tipo: TIPO_DATO.NULL, valor: null };
         }
         
-        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
-            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) - Number(der.valor) };
-        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) 
-            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) - parseFloat(der.valor) };
+        let valNumIzq = this.getValorNumerico(izq);
+        let valNumDer = this.getValorNumerico(der);
+        
+        if (valNumIzq !== null && valNumDer !== null) {
+            let tipoRes = (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) ? TIPO_DATO.FLOAT : TIPO_DATO.INT;
+            return { tipo: tipoRes, valor: valNumIzq - valNumDer };
+        }
         
         arbol.errores.push(new Excepcion("Semántico", `Resta no válida entre ${izq.tipo} y ${der.tipo}`, this.linea, this.columna));
         return { tipo: TIPO_DATO.NULL, valor: null };
     }
 
     multiplicar(izq, der, arbol) {
-        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
-            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) * Number(der.valor) };
-        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) 
-            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) * parseFloat(der.valor) };
+        let valNumIzq = this.getValorNumerico(izq);
+        let valNumDer = this.getValorNumerico(der);
+        
+        if (valNumIzq !== null && valNumDer !== null) {
+            let tipoRes = (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) ? TIPO_DATO.FLOAT : TIPO_DATO.INT;
+            return { tipo: tipoRes, valor: valNumIzq * valNumDer };
+        }
         
         arbol.errores.push(new Excepcion("Semántico", `Multiplicación no válida entre ${izq.tipo} y ${der.tipo}`, this.linea, this.columna));
         return { tipo: TIPO_DATO.NULL, valor: null };
     }
 
     dividir(izq, der, arbol) {
-        if (Number(der.valor) === 0) {
-            arbol.errores.push(new Excepcion("Semántico", "División entre cero no permitida.", this.linea, this.columna));
-            return { tipo: TIPO_DATO.NULL, valor: null };
+        let valNumIzq = this.getValorNumerico(izq);
+        let valNumDer = this.getValorNumerico(der);
+        
+        if (valNumIzq !== null && valNumDer !== null) {
+            if (valNumDer === 0) {
+                arbol.errores.push(new Excepcion("Semántico", "División entre cero no permitida.", this.linea, this.columna));
+                return { tipo: TIPO_DATO.NULL, valor: null };
+            }
+            let tipoRes = (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT) ? TIPO_DATO.FLOAT : TIPO_DATO.INT;
+            let valorRes = valNumIzq / valNumDer;
+            
+            if (tipoRes === TIPO_DATO.INT) {
+                valorRes = Math.trunc(valorRes);
+            }
+            
+            return { tipo: tipoRes, valor: valorRes };
         }
-        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) 
-            return { tipo: TIPO_DATO.INT, valor: Math.trunc(Number(izq.valor) / Number(der.valor)) };
-        if (izq.tipo === TIPO_DATO.FLOAT || der.tipo === TIPO_DATO.FLOAT)
-            return { tipo: TIPO_DATO.FLOAT, valor: parseFloat(izq.valor) / parseFloat(der.valor) };
 
         arbol.errores.push(new Excepcion("Semántico", `División no válida entre ${izq.tipo} y ${der.tipo}`, this.linea, this.columna));
         return { tipo: TIPO_DATO.NULL, valor: null };
     }
 
     modulo(izq, der, arbol) {
-        if (izq.tipo === TIPO_DATO.INT && der.tipo === TIPO_DATO.INT) {
-            if (Number(der.valor) === 0) {
+        let valNumIzq = this.getValorNumerico(izq);
+        let valNumDer = this.getValorNumerico(der);
+        
+        if (valNumIzq !== null && valNumDer !== null && izq.tipo !== TIPO_DATO.FLOAT && der.tipo !== TIPO_DATO.FLOAT) {
+            if (valNumDer === 0) {
                 arbol.errores.push(new Excepcion("Semántico", "Módulo entre cero no permitido.", this.linea, this.columna));
                 return { tipo: TIPO_DATO.NULL, valor: null };
             }
-            return { tipo: TIPO_DATO.INT, valor: Number(izq.valor) % Number(der.valor) };
+            return { tipo: TIPO_DATO.INT, valor: valNumIzq % valNumDer };
         }
         
         arbol.errores.push(new Excepcion("Semántico", `Módulo no válido entre ${izq.tipo} y ${der.tipo}. Ambos deben ser enteros.`, this.linea, this.columna));

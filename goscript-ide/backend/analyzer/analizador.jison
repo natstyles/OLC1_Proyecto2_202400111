@@ -8,6 +8,7 @@
     const Declaracion = require('../models/declaracion');
     const Acceso = require('../models/acceso');
     const Asignacion = require('../models/asignacion');
+    const AsignacionCompuesta = require('../models/asignacionCompuesta');
     const SentenciaIf = require('../models/sentenciaIf');
     const SentenciaWhile = require('../models/sentenciaWhile');
     const SentenciaFor = require('../models/sentenciaFor');
@@ -37,13 +38,14 @@
 
 [ \t\r]+                    /* ignoro espacios en blanco */
 \n+                         /* ignoro saltos de línea */
-"//".*                      /* comentario una linea */
+"//".* /* comentario una linea */
 [/][*][^*]*[*]+([^/*][^*]*[*]+)*[/]  /* multilinea */
 
 "int"                       return 'R_INT';
 "float64"                   return 'R_FLOAT';
 "string"                    return 'R_STRING';
 "bool"                      return 'R_BOOL';
+"rune"                      return 'R_RUNE';
 "var"                       return 'R_VAR';
 "fmt.Println"               return 'R_PRINT';
 "if"                        return 'R_IF';
@@ -61,7 +63,6 @@
 "struct"                    return 'R_STRUCT';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
-
 "=="                        return 'IGUAL_IGUAL';
 "!="                        return 'NO_IGUAL';
 "<="                        return 'MENOR_IGUAL';
@@ -69,8 +70,9 @@
 "<"                         return 'MENOR';
 ">"                         return 'MAYOR';
 ":="                        return 'DOS_PUNTOS_IGUAL';
+"+="                        return 'MAS_IGUAL';
+"-="                        return 'MENOS_IGUAL';
 "="                         return 'IGUAL';
-
 "&&"                        return 'AND';
 "||"                        return 'OR';
 "!"                         return 'NOT';
@@ -80,7 +82,6 @@
 "*"                         return 'MULT';
 "/"                         return 'DIV';
 "%"                         return 'MOD';
-
 "("                         return 'PAR_IZQ';
 ")"                         return 'PAR_DER';
 "{"                         return 'LLAVE_IZQ';
@@ -91,14 +92,15 @@
 ":"                         return 'DOS_PUNTOS';
 ";"                         return 'PT_COMA';
 ","                         return 'COMA';
-
 \"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'CADENA'; }
+\'([^\'\\]|\\.)\'           { yytext = yytext.substr(1, yyleng-2); return 'CARACTER'; }
 [0-9]+("."[0-9]+)\b         return 'DECIMAL';
 [0-9]+\b                    return 'ENTERO';
-[a-zA-Z_][a-zA-Z0-9_]*      return 'IDENTIFICADOR';
+[a-zA-Z_][a-zA-Z0-9_]* return 'IDENTIFICADOR';
 
 <<EOF>>                     return 'EOF';
-.                           { 
+.               
+                            { 
                                 if (!yy.errores) yy.errores = [];
                                 yy.errores.push(new Excepcion("Léxico", "Carácter no válido: " + yytext, this.yylloc.first_line, this.yylloc.first_column + 1));
                                 return this.lex();
@@ -143,6 +145,10 @@ instruccion
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR IGUAL expresion PT_COMA
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MAS_IGUAL expresion PT_COMA
+      { $$ = new AsignacionCompuesta($1, $3, '+', @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MENOS_IGUAL expresion PT_COMA
+      { $$ = new AsignacionCompuesta($1, $3, '-', @1.first_line, @1.first_column); }
     | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL expresion PT_COMA
       { $$ = new AsignacionStruct($1, $3, $5, @1.first_line, @1.first_column); }
     | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER IGUAL expresion PT_COMA
@@ -234,6 +240,10 @@ init_for
 actualizacion_for
     : IDENTIFICADOR IGUAL expresion 
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MAS_IGUAL expresion 
+      { $$ = new AsignacionCompuesta($1, $3, '+', @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MENOS_IGUAL expresion 
+      { $$ = new AsignacionCompuesta($1, $3, '-', @1.first_line, @1.first_column); }
     ;
 
 instruccion_switch
@@ -258,6 +268,7 @@ tipo_dato
     | R_FLOAT   { $$ = TIPO_DATO.FLOAT; }
     | R_STRING  { $$ = TIPO_DATO.STRING; }
     | R_BOOL    { $$ = TIPO_DATO.BOOL; }
+    | R_RUNE    { $$ = TIPO_DATO.RUNE; } /* <-- NUEVO TIPO RUNE */
     | CORCHETE_IZQ ENTERO CORCHETE_DER tipo_dato { $$ = TIPO_DATO.ARREGLO; }
     | CORCHETE_IZQ CORCHETE_DER tipo_dato { $$ = TIPO_DATO.ARREGLO; }
     ;
@@ -298,6 +309,7 @@ expresion
     | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
     | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
     | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }
+    | CARACTER                      { $$ = new Literal(TIPO_DATO.RUNE, $1, @1.first_line, @1.first_column); } /* <-- NUEVO LITERAL RUNE */
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
