@@ -30,6 +30,7 @@
     const { TIPO_DATO } = require('../models/tipo');
     const Embebida = require('../models/embebida');
     const NativasSlice = require('../models/nativasSlice');
+    const SentenciaForRange = require('../models/sentenciaForRange');
 %}
 
 /* definición lexica */
@@ -54,6 +55,7 @@
 "else"                      return 'R_ELSE';
 "while"                     return 'R_WHILE';
 "for"                       return 'R_FOR';
+"range"                     return 'R_RANGE';
 "switch"                    return 'R_SWITCH';
 "case"                      return 'R_CASE';
 "default"                   return 'R_DEFAULT';
@@ -237,6 +239,13 @@ instruccion_while
 instruccion_for
     : R_FOR PAR_IZQ init_for PT_COMA expresion PT_COMA actualizacion_for PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaFor($3, $5, $7, $10, @1.first_line, @1.first_column); }
+    | R_FOR IDENTIFICADOR COMA IDENTIFICADOR DOS_PUNTOS_IGUAL R_RANGE acceso_range LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaForRange($2, $4, $7, $9, @1.first_line, @1.first_column); }
+    ;
+
+acceso_range
+    : IDENTIFICADOR { $$ = new Acceso($1, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
     ;
 
 init_for
