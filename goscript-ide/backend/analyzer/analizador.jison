@@ -28,6 +28,7 @@
     const AsignacionStruct = require('../models/asignacionStruct');
     const Excepcion = require('../models/excepcion');
     const { TIPO_DATO } = require('../models/tipo');
+    const Embebida = require('../models/embebida');
 %}
 
 /* definición lexica */
@@ -76,6 +77,10 @@
 "&&"                        return 'AND';
 "||"                        return 'OR';
 "!"                         return 'NOT';
+
+"strconv.Atoi"              return 'R_ATOI';
+"strconv.ParseFloat"        return 'R_PARSEFLOAT';
+"reflect.TypeOf"            return 'R_TYPEOF';
 
 "+"                         return 'MAS';
 "-"                         return 'MENOS';
@@ -319,6 +324,12 @@ expresion
     | CORCHETE_IZQ lista_valores_opt CORCHETE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
+
+    /* Funciones Embebidas */
+    | R_ATOI PAR_IZQ expresion PAR_DER { $$ = new Embebida('atoi', $3, @1.first_line, @1.first_column); }
+    | R_PARSEFLOAT PAR_IZQ expresion PAR_DER { $$ = new Embebida('parsefloat', $3, @1.first_line, @1.first_column); }
+    | R_TYPEOF PAR_IZQ expresion PAR_DER PUNTO R_STRING { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
+    | R_TYPEOF PAR_IZQ expresion PAR_DER { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
     ;
 
 lista_valores_struct
