@@ -1,45 +1,58 @@
 const Node = require('./astNode');
 const { TIPO_DATO } = require('./tipo');
+const Excepcion = require('./excepcion');
 
 class AccesoArreglo extends Node {
-    constructor(id, indice, linea, columna) {
+    constructor(id, indices, linea, columna) {
         super(linea, columna);
         this.id = id;
-        this.indice = indice;
+        this.indices = indices;
     }
 
     interpretar(arbol, tabla) {
         let simbolo = tabla.obtener(this.id);
-        if (simbolo === null) {
-            console.error(`Error: Arreglo ${this.id} no existe.`);
+        if (!simbolo) {
+            arbol.errores.push(new Excepcion("Semántico", `Arreglo '${this.id}' no encontrado.`, this.linea, this.columna));
             return { tipo: TIPO_DATO.NULL, valor: null };
         }
 
-        let idx = this.indice.interpretar(arbol, tabla);
-        if (idx.tipo !== TIPO_DATO.INT) {
-            console.error("Error: El índice debe ser de tipo entero.");
-            return { tipo: TIPO_DATO.NULL, valor: null };
-        }
+        let elementoActual = { tipo: simbolo.tipo, valor: simbolo.valor };
 
-        let arreglo = simbolo.valor;
-        if (idx.valor < 0 || idx.valor >= arreglo.length) {
-            console.error("Error: Índice fuera de los límites del arreglo.");
-            return { tipo: TIPO_DATO.NULL, valor: null };
+        for (let i = 0; i < this.indices.length; i++) {
+            let indexExpr = this.indices[i].interpretar(arbol, tabla);
+            
+            if (indexExpr.tipo !== TIPO_DATO.INT) {
+                arbol.errores.push(new Excepcion("Semántico", "El índice debe ser de tipo entero.", this.linea, this.columna));
+                return { tipo: TIPO_DATO.NULL, valor: null };
+            }
+            
+            let idx = indexExpr.valor;
+            
+            if (!Array.isArray(elementoActual.valor)) {
+                arbol.errores.push(new Excepcion("Semántico", "Acceso a índice en un tipo que no es arreglo.", this.linea, this.columna));
+                return { tipo: TIPO_DATO.NULL, valor: null };
+            }
+            
+            if (idx < 0 || idx >= elementoActual.valor.length) {
+                arbol.errores.push(new Excepcion("Semántico", `Índice ${idx} fuera de límites.`, this.linea, this.columna));
+                return { tipo: TIPO_DATO.NULL, valor: null };
+            }
+            
+            elementoActual = elementoActual.valor[idx];
         }
-
-        return arreglo[idx.valor];
+        
+        return elementoActual;
     }
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        let dot = `${miId} [label="Acceso Arreglo\\n${this.id}"];\n`;
+        let dot = `${miId} [label="Acceso Arreglo\\n'${this.id}'"];\n`;
         dot += `${padre} -> ${miId};\n`;
 
-        if (this.indice && typeof this.indice.getAST === 'function') {
-            let idxId = `n${contador.c++}`;
-            dot += `${idxId} [label="Índice"];\n`;
-            dot += `${miId} -> ${idxId};\n`;
-            dot += this.indice.getAST(idxId, contador);
+        for (let idx of this.indices) {
+            if (idx && typeof idx.getAST === 'function') {
+                dot += idx.getAST(miId, contador);
+            }
         }
 
         return dot;

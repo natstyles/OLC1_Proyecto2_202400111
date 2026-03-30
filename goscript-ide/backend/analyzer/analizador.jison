@@ -164,8 +164,8 @@ instruccion
       { $$ = new AsignacionCompuesta($1, $3, '-', @1.first_line, @1.first_column); }
     | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL expresion PT_COMA
       { $$ = new AsignacionStruct($1, $3, $5, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER IGUAL expresion PT_COMA
-      { $$ = new AsignacionArreglo($1, $3, $6, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR lista_indices IGUAL expresion PT_COMA
+      { $$ = new AsignacionArreglo($1, $2, $4, @1.first_line, @1.first_column); }
     | R_TYPE IDENTIFICADOR R_STRUCT LLAVE_IZQ lista_atributos LLAVE_DER PT_COMA
       { $$ = new DefinicionStruct($2, $5, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
@@ -298,6 +298,11 @@ lista_valores_opt
     | /* vacio */ { $$ = []; }
     ;
 
+lista_indices
+    : lista_indices CORCHETE_IZQ expresion CORCHETE_DER { $1.push($3); $$ = $1; }
+    | CORCHETE_IZQ expresion CORCHETE_DER                 { $$ = [$2]; }
+    ;
+
 expresiones
     : expresiones COMA expresion { $1.push($3); $$ = $1; }
     | expresion                 { $$ = [$1]; }
@@ -334,7 +339,7 @@ expresion
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER { $$ = new AccesoArreglo($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR lista_indices { $$ = new AccesoArreglo($1, $2, @1.first_line, @1.first_column); }
     | CORCHETE_IZQ CORCHETE_DER tipo_dato LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($5, @1.first_line, @1.first_column); }
     | LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     | IDENTIFICADOR LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }

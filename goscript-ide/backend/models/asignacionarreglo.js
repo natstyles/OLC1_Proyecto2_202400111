@@ -1,59 +1,58 @@
 const Node = require('./astNode');
 const { TIPO_DATO } = require('./tipo');
+const Excepcion = require('./excepcion');
 
 class AsignacionArreglo extends Node {
-    constructor(id, indice, expresion, linea, columna) {
+    constructor(id, indices, expresion, linea, columna) {
         super(linea, columna);
         this.id = id;
-        this.indice = indice;
+        this.indices = indices;
         this.expresion = expresion;
     }
 
     interpretar(arbol, tabla) {
         let simbolo = tabla.obtener(this.id);
+        if (!simbolo) {
+            arbol.errores.push(new Excepcion("Semántico", `Arreglo '${this.id}' no encontrado.`, this.linea, this.columna));
+            return null;
+        }
+
+        let elementoActual = { tipo: simbolo.tipo, valor: simbolo.valor };
+
+        for (let i = 0; i < this.indices.length - 1; i++) {
+            let indexExpr = this.indices[i].interpretar(arbol, tabla);
+            let idx = indexExpr.valor;
+            elementoActual = elementoActual.valor[idx];
+        }
+
+        let lastIdxExpr = this.indices[this.indices.length - 1].interpretar(arbol, tabla);
+        let lastIdx = lastIdxExpr.valor;
+
+        let newValue = this.expresion.interpretar(arbol, tabla);
         
-        if (simbolo === null) {
-            console.error(`Error: Arreglo ${this.id} no existe.`);
-            return null;
+        if (elementoActual.valor[lastIdx]) {
+            elementoActual.valor[lastIdx] = newValue;
         }
 
-        let idx = this.indice.interpretar(arbol, tabla);
-        if (idx.tipo !== TIPO_DATO.INT) {
-            console.error("Error: El índice debe ser de tipo entero.");
-            return null;
-        }
-
-        let arreglo = simbolo.valor;
-        if (idx.valor < 0 || idx.valor >= arreglo.length) {
-            console.error("Error: Índice fuera de los límites del arreglo.");
-            return null;
-        }
-
-        let nuevoValor = this.expresion.interpretar(arbol, tabla);
-        arreglo[idx.valor] = nuevoValor;
-
-        tabla.guardar(this.id, simbolo);
-        
         return null;
     }
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        let dot = `${miId} [label="Asignación Arreglo\\n${this.id}"];\n`;
+        let dot = `${miId} [label="Asignación Arreglo\\n'${this.id}'"];\n`;
         dot += `${padre} -> ${miId};\n`;
 
-        if (this.indice && typeof this.indice.getAST === 'function') {
-            let idxId = `n${contador.c++}`;
-            dot += `${idxId} [label="Índice"];\n`;
-            dot += `${miId} -> ${idxId};\n`;
-            dot += this.indice.getAST(idxId, contador);
+        for (let idx of this.indices) {
+            if (idx && typeof idx.getAST === 'function') {
+                dot += idx.getAST(miId, contador);
+            }
         }
 
         if (this.expresion && typeof this.expresion.getAST === 'function') {
-            let expId = `n${contador.c++}`;
-            dot += `${expId} [label="Expresión"];\n`;
-            dot += `${miId} -> ${expId};\n`;
-            dot += this.expresion.getAST(expId, contador);
+            let exprId = `n${contador.c++}`;
+            dot += `${exprId} [label="Nuevo Valor"];\n`;
+            dot += `${miId} -> ${exprId};\n`;
+            dot += this.expresion.getAST(exprId, contador);
         }
 
         return dot;
