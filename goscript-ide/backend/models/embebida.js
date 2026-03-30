@@ -5,7 +5,7 @@ const Excepcion = require('./excepcion');
 class Embebida extends Node {
     constructor(funcion, argumento, linea, columna) {
         super(linea, columna);
-        this.funcion = funcion; // 'atoi', 'parsefloat', 'typeof'
+        this.funcion = funcion; //atoi, parsefloat, typeof
         this.argumento = argumento;
     }
 
@@ -20,7 +20,7 @@ class Embebida extends Node {
             }
             const num = Number(arg.valor);
             
-            // Validamos que no sea decimal según el enunciado
+            //validar que no sea decimal
             if (isNaN(num) || !Number.isInteger(num) || String(arg.valor).includes('.')) {
                 arbol.errores.push(new Excepcion("Semántico", `strconv.Atoi generó un error al convertir '${arg.valor}'.`, this.linea, this.columna));
                 return { tipo: TIPO_DATO.NULL, valor: null };

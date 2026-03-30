@@ -29,6 +29,7 @@
     const Excepcion = require('../models/excepcion');
     const { TIPO_DATO } = require('../models/tipo');
     const Embebida = require('../models/embebida');
+    const NativasSlice = require('../models/nativasSlice');
 %}
 
 /* definición lexica */
@@ -81,6 +82,11 @@
 "strconv.Atoi"              return 'R_ATOI';
 "strconv.ParseFloat"        return 'R_PARSEFLOAT';
 "reflect.TypeOf"            return 'R_TYPEOF';
+
+"len"                       return 'R_LEN';
+"append"                    return 'R_APPEND';
+"slices.Index"              return 'R_SLICES_INDEX';
+"strings.Join"              return 'R_STRINGS_JOIN';
 
 "+"                         return 'MAS';
 "-"                         return 'MENOS';
@@ -314,14 +320,15 @@ expresion
     | ENTERO                        { $$ = new Literal(TIPO_DATO.INT, $1, @1.first_line, @1.first_column); }
     | DECIMAL                       { $$ = new Literal(TIPO_DATO.FLOAT, $1, @1.first_line, @1.first_column); }
     | CADENA                        { $$ = new Literal(TIPO_DATO.STRING, $1, @1.first_line, @1.first_column); }
-    | CARACTER                      { $$ = new Literal(TIPO_DATO.RUNE, $1, @1.first_line, @1.first_column); } /* <-- NUEVO LITERAL RUNE */
+    | CARACTER                      { $$ = new Literal(TIPO_DATO.RUNE, $1, @1.first_line, @1.first_column); }
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR CORCHETE_IZQ expresion CORCHETE_DER { $$ = new AccesoArreglo($1, $3, @1.first_line, @1.first_column); }
+    | CORCHETE_IZQ CORCHETE_DER tipo_dato LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($5, @1.first_line, @1.first_column); }
+    | LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     | IDENTIFICADOR LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }
-    | CORCHETE_IZQ lista_valores_opt CORCHETE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | PAR_IZQ expresion PAR_DER     { $$ = $2; }
 
@@ -330,6 +337,12 @@ expresion
     | R_PARSEFLOAT PAR_IZQ expresion PAR_DER { $$ = new Embebida('parsefloat', $3, @1.first_line, @1.first_column); }
     | R_TYPEOF PAR_IZQ expresion PAR_DER PUNTO R_STRING { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
     | R_TYPEOF PAR_IZQ expresion PAR_DER { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
+
+    /* Nativas de Slices */
+    | R_LEN PAR_IZQ lista_valores_opt PAR_DER { $$ = new NativasSlice('len', $3, @1.first_line, @1.first_column); }
+    | R_APPEND PAR_IZQ lista_valores_opt PAR_DER { $$ = new NativasSlice('append', $3, @1.first_line, @1.first_column); }
+    | R_SLICES_INDEX PAR_IZQ lista_valores_opt PAR_DER { $$ = new NativasSlice('slices.index', $3, @1.first_line, @1.first_column); }
+    | R_STRINGS_JOIN PAR_IZQ lista_valores_opt PAR_DER { $$ = new NativasSlice('strings.join', $3, @1.first_line, @1.first_column); }
     ;
 
 lista_valores_struct
