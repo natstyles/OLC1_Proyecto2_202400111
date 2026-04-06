@@ -80,6 +80,9 @@
 "-="                        return 'MENOS_IGUAL';
 "="                         return 'IGUAL';
 
+"++"                        return 'MAS_MAS';
+"--"                        return 'MENOS_MENOS';
+
 "&&"                        return 'AND';
 "||"                        return 'OR';
 "!"                         return 'NOT';
@@ -157,23 +160,33 @@ pt_coma_opcional
 instruccion
     : R_PRINT PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional
       { $$ = new Print($3, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion pt_coma_opcional
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL valor_asignable pt_coma_opcional
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR IDENTIFICADOR IGUAL expresion pt_coma_opcional
-      { $$ = new Declaracion('STRUCT', $2, $5, @1.first_line, @1.first_column); }
     | R_VAR IDENTIFICADOR tipo_dato pt_coma_opcional
       { $$ = new Declaracion($3, $2, null, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion pt_coma_opcional
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL valor_asignable pt_coma_opcional
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR IGUAL expresion pt_coma_opcional
+    | IDENTIFICADOR IGUAL valor_asignable pt_coma_opcional
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR MAS_IGUAL expresion pt_coma_opcional
+    | IDENTIFICADOR MAS_IGUAL valor_asignable pt_coma_opcional
       { $$ = new AsignacionCompuesta($1, $3, '+', @1.first_line, @1.first_column); }
-    | IDENTIFICADOR MENOS_IGUAL expresion pt_coma_opcional
+    | IDENTIFICADOR MENOS_IGUAL valor_asignable pt_coma_opcional
       { $$ = new AsignacionCompuesta($1, $3, '-', @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL expresion pt_coma_opcional
+    | IDENTIFICADOR MAS_MAS pt_coma_opcional
+      { $$ = new AsignacionCompuesta($1, new Literal(TIPO_DATO.INT, 1, @1.first_line, @1.first_column), '+', @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MENOS_MENOS pt_coma_opcional
+      { $$ = new AsignacionCompuesta($1, new Literal(TIPO_DATO.INT, 1, @1.first_line, @1.first_column), '-', @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL valor_asignable pt_coma_opcional
       { $$ = new AsignacionStruct($1, $3, $5, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR lista_indices IGUAL expresion pt_coma_opcional
+    | IDENTIFICADOR PUNTO IDENTIFICADOR MAS_IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionStruct($1, $3, new Aritmetica(new AccesoStruct($1, $3, @1.first_line, @1.first_column), '+', $5, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PUNTO IDENTIFICADOR MENOS_IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionStruct($1, $3, new Aritmetica(new AccesoStruct($1, $3, @1.first_line, @1.first_column), '-', $5, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
+    | IDENTIFICADOR lista_indices MAS_IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionArreglo($1, $2, new Aritmetica(new AccesoArreglo($1, $2, @1.first_line, @1.first_column), '+', $4, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
+    | IDENTIFICADOR lista_indices MENOS_IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionArreglo($1, $2, new Aritmetica(new AccesoArreglo($1, $2, @1.first_line, @1.first_column), '-', $4, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
+    | IDENTIFICADOR lista_indices IGUAL valor_asignable pt_coma_opcional
       { $$ = new AsignacionArreglo($1, $2, $4, @1.first_line, @1.first_column); }
     | R_TYPE IDENTIFICADOR R_STRUCT LLAVE_IZQ lista_atributos LLAVE_DER pt_coma_opcional
       { $$ = new DefinicionStruct($2, $5, @1.first_line, @1.first_column); }
@@ -182,23 +195,12 @@ instruccion
     | instruccion_for { $$ = $1; }
     | instruccion_switch { $$ = $1; }
     | instruccion_funcion { $$ = $1; }
-    | R_RETURN expresion pt_coma_opcional { $$ = new Return($2, @1.first_line, @1.first_column); }
+    | R_RETURN valor_asignable pt_coma_opcional { $$ = new Return($2, @1.first_line, @1.first_column); }
     | R_RETURN pt_coma_opcional { $$ = new Return(null, @1.first_line, @1.first_column); }
     | R_BREAK pt_coma_opcional { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE pt_coma_opcional { $$ = new Continue(@1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR tipo_dato IGUAL pt_coma_opcional { $$ = null; }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL pt_coma_opcional { $$ = null; }
-    | IDENTIFICADOR IGUAL pt_coma_opcional { $$ = null; }
-
-    /* recuperación de declaraciones y asignaciones con expresion rota */
-    | R_VAR IDENTIFICADOR tipo_dato IGUAL error pt_coma_opcional { $$ = null; }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL error pt_coma_opcional { $$ = null; }
-    | IDENTIFICADOR IGUAL error pt_coma_opcional { $$ = null; }
-
-    /* recuperación general */
-    | error pt_coma_opcional
-      { $$ = null; }
+    | error pt_coma_opcional { $$ = null; }
     ;
 
 lista_atributos
@@ -234,20 +236,30 @@ parametro
 instruccion_if
     : R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaIf($3, $6, null, @1.first_line, @1.first_column); }
+    | R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaIf($2, $4, null, @1.first_line, @1.first_column); }
     | R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER R_ELSE LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaIf($3, $6, $10, @1.first_line, @1.first_column); }
+    | R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER R_ELSE LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaIf($2, $4, $8, @1.first_line, @1.first_column); }
     | R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER R_ELSE instruccion_if
       { $$ = new SentenciaIf($3, $6, $9, @1.first_line, @1.first_column); }
+    | R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER R_ELSE instruccion_if
+      { $$ = new SentenciaIf($2, $4, $7, @1.first_line, @1.first_column); }
     ;
 
 instruccion_while
     : R_WHILE PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaWhile($3, $6, @1.first_line, @1.first_column); }
+    | R_WHILE expresion LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaWhile($2, $4, @1.first_line, @1.first_column); }
     ;
 
 instruccion_for
     : R_FOR PAR_IZQ init_for PT_COMA expresion PT_COMA actualizacion_for PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaFor($3, $5, $7, $10, @1.first_line, @1.first_column); }
+    | R_FOR init_for PT_COMA expresion PT_COMA actualizacion_for LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaFor($2, $4, $6, $8, @1.first_line, @1.first_column); }
     | R_FOR IDENTIFICADOR COMA IDENTIFICADOR DOS_PUNTOS_IGUAL R_RANGE acceso_range LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaForRange($2, $4, $7, $9, @1.first_line, @1.first_column); }
     ;
@@ -258,26 +270,32 @@ acceso_range
     ;
 
 init_for
-    : R_VAR IDENTIFICADOR tipo_dato IGUAL expresion 
+    : R_VAR IDENTIFICADOR tipo_dato IGUAL valor_asignable 
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion 
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL valor_asignable 
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR IGUAL expresion 
+    | IDENTIFICADOR IGUAL valor_asignable 
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
     ;
 
 actualizacion_for
-    : IDENTIFICADOR IGUAL expresion 
+    : IDENTIFICADOR IGUAL valor_asignable 
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR MAS_IGUAL expresion 
+    | IDENTIFICADOR MAS_IGUAL valor_asignable 
       { $$ = new AsignacionCompuesta($1, $3, '+', @1.first_line, @1.first_column); }
-    | IDENTIFICADOR MENOS_IGUAL expresion 
+    | IDENTIFICADOR MENOS_IGUAL valor_asignable 
       { $$ = new AsignacionCompuesta($1, $3, '-', @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MAS_MAS
+      { $$ = new AsignacionCompuesta($1, new Literal(TIPO_DATO.INT, 1, @1.first_line, @1.first_column), '+', @1.first_line, @1.first_column); }
+    | IDENTIFICADOR MENOS_MENOS
+      { $$ = new AsignacionCompuesta($1, new Literal(TIPO_DATO.INT, 1, @1.first_line, @1.first_column), '-', @1.first_line, @1.first_column); }
     ;
 
 instruccion_switch
     : R_SWITCH PAR_IZQ expresion PAR_DER LLAVE_IZQ casos LLAVE_DER
       { $$ = new SentenciaSwitch($3, $6, @1.first_line, @1.first_column); }
+    | R_SWITCH expresion LLAVE_IZQ casos LLAVE_DER
+      { $$ = new SentenciaSwitch($2, $4, @1.first_line, @1.first_column); }
     ;
 
 casos
@@ -285,10 +303,15 @@ casos
     | caso       { $$ = [$1]; }
     ;
 
+instrucciones_opt
+    : instrucciones { $$ = $1; }
+    | /* vacio */ { $$ = []; }
+    ;
+
 caso
-    : R_CASE expresion DOS_PUNTOS instrucciones
+    : R_CASE expresion DOS_PUNTOS instrucciones_opt
       { $$ = new Caso($2, $4, @1.first_line, @1.first_column); }
-    | R_DEFAULT DOS_PUNTOS instrucciones
+    | R_DEFAULT DOS_PUNTOS instrucciones_opt
       { $$ = new Caso(null, $3, @1.first_line, @1.first_column); }
     ;
 
@@ -297,24 +320,33 @@ tipo_dato
     | R_FLOAT   { $$ = TIPO_DATO.FLOAT; }
     | R_STRING  { $$ = TIPO_DATO.STRING; }
     | R_BOOL    { $$ = TIPO_DATO.BOOL; }
-    | R_RUNE    { $$ = TIPO_DATO.RUNE; } /* <-- NUEVO TIPO RUNE */
+    | R_RUNE    { $$ = TIPO_DATO.RUNE; }
+    | IDENTIFICADOR { $$ = 'STRUCT'; }
     | CORCHETE_IZQ ENTERO CORCHETE_DER tipo_dato { $$ = TIPO_DATO.ARREGLO; }
     | CORCHETE_IZQ CORCHETE_DER tipo_dato { $$ = TIPO_DATO.ARREGLO; }
     ;
 
+valor_asignable
+    : expresion { $$ = $1; }
+    | IDENTIFICADOR LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR LLAVE_IZQ LLAVE_DER { $$ = new InstanciaStruct($1, [], @1.first_line, @1.first_column); }
+    | CORCHETE_IZQ CORCHETE_DER tipo_dato LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($5, @1.first_line, @1.first_column); }
+    | LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
+    ;
+
 lista_valores_opt
-    : expresiones { $$ = $1; }
+    : valores_asignables { $$ = $1; }
     | /* vacio */ { $$ = []; }
     ;
 
-lista_indices
-    : lista_indices CORCHETE_IZQ expresion CORCHETE_DER { $1.push($3); $$ = $1; }
-    | CORCHETE_IZQ expresion CORCHETE_DER                 { $$ = [$2]; }
+valores_asignables
+    : valores_asignables COMA valor_asignable { $1.push($3); $$ = $1; }
+    | valor_asignable { $$ = [$1]; }
     ;
 
-expresiones
-    : expresiones COMA expresion { $1.push($3); $$ = $1; }
-    | expresion                 { $$ = [$1]; }
+lista_indices
+    : lista_indices CORCHETE_IZQ valor_asignable CORCHETE_DER { $1.push($3); $$ = $1; }
+    | CORCHETE_IZQ valor_asignable CORCHETE_DER                 { $$ = [$2]; }
     ;
 
 expresion
@@ -349,17 +381,14 @@ expresion
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR lista_indices { $$ = new AccesoArreglo($1, $2, @1.first_line, @1.first_column); }
-    | CORCHETE_IZQ CORCHETE_DER tipo_dato LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($5, @1.first_line, @1.first_column); }
-    | LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | PAR_IZQ expresion PAR_DER     { $$ = $2; }
+    | PAR_IZQ valor_asignable PAR_DER { $$ = $2; }
 
     /* Funciones Embebidas */
-    | R_ATOI PAR_IZQ expresion PAR_DER { $$ = new Embebida('atoi', $3, @1.first_line, @1.first_column); }
-    | R_PARSEFLOAT PAR_IZQ expresion PAR_DER { $$ = new Embebida('parsefloat', $3, @1.first_line, @1.first_column); }
-    | R_TYPEOF PAR_IZQ expresion PAR_DER PUNTO R_STRING { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
-    | R_TYPEOF PAR_IZQ expresion PAR_DER { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
+    | R_ATOI PAR_IZQ valor_asignable PAR_DER { $$ = new Embebida('atoi', $3, @1.first_line, @1.first_column); }
+    | R_PARSEFLOAT PAR_IZQ valor_asignable PAR_DER { $$ = new Embebida('parsefloat', $3, @1.first_line, @1.first_column); }
+    | R_TYPEOF PAR_IZQ valor_asignable PAR_DER PUNTO R_STRING { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
+    | R_TYPEOF PAR_IZQ valor_asignable PAR_DER { $$ = new Embebida('typeof', $3, @1.first_line, @1.first_column); }
 
     /* Nativas de Slices */
     | R_LEN PAR_IZQ lista_valores_opt PAR_DER { $$ = new NativasSlice('len', $3, @1.first_line, @1.first_column); }
@@ -374,5 +403,5 @@ lista_valores_struct
     ;
 
 valor_struct
-    : IDENTIFICADOR DOS_PUNTOS expresion { $$ = { id: $1, expresion: $3 }; }
+    : IDENTIFICADOR DOS_PUNTOS valor_asignable { $$ = { id: $1, expresion: $3 }; }
     ;

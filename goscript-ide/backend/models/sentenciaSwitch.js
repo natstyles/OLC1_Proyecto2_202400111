@@ -1,6 +1,8 @@
 const Node = require('./astNode');
 const Entorno = require('./entorno');
 const Break = require('./break');
+const Continue = require('./continue');
+const Return = require('./return');
 
 class SentenciaSwitch extends Node {
     constructor(expresion, casos, linea, columna) {
@@ -11,18 +13,22 @@ class SentenciaSwitch extends Node {
 
     interpretar(arbol, tabla) {
         const exprSwitch = this.expresion.interpretar(arbol, tabla);
-        
+        if (!exprSwitch || exprSwitch.tipo === 'NULL') return null;
+
         for (let i = 0; i < this.casos.length; i++) {
             let caso = this.casos[i];
             
             if (caso.expresion) {
                 let exprCaso = caso.expresion.interpretar(arbol, tabla);
-                if (exprSwitch.valor == exprCaso.valor) {
+                if (exprSwitch.valor === exprCaso.valor) {
                     const nuevoEntorno = new Entorno(tabla, "Case");
-                    for (let instr of caso.instrucciones) {
-                        const res = instr.interpretar(arbol, nuevoEntorno);
-                        if (res instanceof Break) return null;
-                        if (res) return res;
+                    if (caso.instrucciones) {
+                        for (let instr of caso.instrucciones) {
+                            if (!instr) continue;
+                            const res = instr.interpretar(arbol, nuevoEntorno);
+                            if (res instanceof Break) return null;
+                            if (res instanceof Continue || res instanceof Return) return res;
+                        }
                     }
                     return null; 
                 }
@@ -33,10 +39,13 @@ class SentenciaSwitch extends Node {
             let caso = this.casos[i];
             if (!caso.expresion) {
                 const nuevoEntorno = new Entorno(tabla, "Default");
-                for (let instr of caso.instrucciones) {
-                    const res = instr.interpretar(arbol, nuevoEntorno);
-                    if (res instanceof Break) return null;
-                    if (res) return res;
+                if (caso.instrucciones) {
+                    for (let instr of caso.instrucciones) {
+                        if (!instr) continue;
+                        const res = instr.interpretar(arbol, nuevoEntorno);
+                        if (res instanceof Break) return null;
+                        if (res instanceof Continue || res instanceof Return) return res;
+                    }
                 }
                 return null;
             }
