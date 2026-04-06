@@ -31,6 +31,7 @@
     const Embebida = require('../models/embebida');
     const NativasSlice = require('../models/nativasSlice');
     const SentenciaForRange = require('../models/sentenciaForRange');
+    const Bloque = require('../models/bloque');
 %}
 
 /* definición lexica */
@@ -200,6 +201,8 @@ instruccion
     | R_BREAK pt_coma_opcional { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE pt_coma_opcional { $$ = new Continue(@1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
+    | LLAVE_IZQ instrucciones LLAVE_DER pt_coma_opcional { $$ = new Bloque($2, @1.first_line, @1.first_column); } /* <-- NUEVA REGLA */
     | error pt_coma_opcional { $$ = null; }
     ;
 
