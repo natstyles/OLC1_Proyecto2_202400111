@@ -114,7 +114,14 @@
 ";"                         return 'PT_COMA';
 ","                         return 'COMA';
 
-\"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'CADENA'; }
+\"(?:[^\"\\]|\\.)*\"        { 
+                                yytext = yytext.substr(1, yyleng-2)
+                                               .replace(/\\n/g, '\n')
+                                               .replace(/\\t/g, '\t')
+                                               .replace(/\\"/g, '\"')
+                                               .replace(/\\\\/g, '\\');
+                                return 'CADENA'; 
+                            }
 \'([^\'\\]|\\.)\'           { yytext = yytext.substr(1, yyleng-2); return 'CARACTER'; }
 [0-9]+("."[0-9]+)\b         return 'DECIMAL';
 [0-9]+\b                    return 'ENTERO';
@@ -165,6 +172,10 @@ instruccion
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
     | R_VAR IDENTIFICADOR tipo_dato pt_coma_opcional
       { $$ = new Declaracion($3, $2, null, @1.first_line, @1.first_column); }
+    | tipo_dato IDENTIFICADOR IGUAL valor_asignable pt_coma_opcional
+      { $$ = new Declaracion($1, $2, $4, @1.first_line, @1.first_column); }
+    | tipo_dato IDENTIFICADOR pt_coma_opcional
+      { $$ = new Declaracion($1, $2, null, @1.first_line, @1.first_column); }
     | IDENTIFICADOR DOS_PUNTOS_IGUAL valor_asignable pt_coma_opcional
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR IGUAL valor_asignable pt_coma_opcional
@@ -189,8 +200,8 @@ instruccion
       { $$ = new AsignacionArreglo($1, $2, new Aritmetica(new AccesoArreglo($1, $2, @1.first_line, @1.first_column), '-', $4, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
     | IDENTIFICADOR lista_indices IGUAL valor_asignable pt_coma_opcional
       { $$ = new AsignacionArreglo($1, $2, $4, @1.first_line, @1.first_column); }
-    | R_TYPE IDENTIFICADOR R_STRUCT LLAVE_IZQ lista_atributos LLAVE_DER pt_coma_opcional
-      { $$ = new DefinicionStruct($2, $5, @1.first_line, @1.first_column); }
+    | R_STRUCT IDENTIFICADOR LLAVE_IZQ lista_atributos LLAVE_DER pt_coma_opcional
+      { $$ = new DefinicionStruct($2, $4, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
@@ -201,8 +212,7 @@ instruccion
     | R_BREAK pt_coma_opcional { $$ = new Break(@1.first_line, @1.first_column); }
     | R_CONTINUE pt_coma_opcional { $$ = new Continue(@1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | LLAVE_IZQ instrucciones LLAVE_DER pt_coma_opcional { $$ = new Bloque($2, @1.first_line, @1.first_column); } /* <-- NUEVA REGLA */
+    | LLAVE_IZQ instrucciones LLAVE_DER pt_coma_opcional { $$ = new Bloque($2, @1.first_line, @1.first_column); }
     | error pt_coma_opcional { $$ = null; }
     ;
 
@@ -212,7 +222,7 @@ lista_atributos
     ;
 
 atributo
-    : IDENTIFICADOR tipo_dato { $$ = { id: $1, tipo: $2 }; }
+    : tipo_dato IDENTIFICADOR { $$ = { id: $2, tipo: $1 }; }
     ;
 
 instruccion_funcion
@@ -233,7 +243,8 @@ parametros
     ;
 
 parametro
-    : IDENTIFICADOR tipo_dato   { $$ = { id: $1, tipo: $2 }; }
+    : tipo_dato IDENTIFICADOR   { $$ = { id: $2, tipo: $1 }; }
+    | IDENTIFICADOR tipo_dato   { $$ = { id: $1, tipo: $2 }; }
     ;
 
 instruccion_if
@@ -275,6 +286,8 @@ acceso_range
 init_for
     : R_VAR IDENTIFICADOR tipo_dato IGUAL valor_asignable 
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
+    | tipo_dato IDENTIFICADOR IGUAL valor_asignable 
+      { $$ = new Declaracion($1, $2, $4, @1.first_line, @1.first_column); }
     | IDENTIFICADOR DOS_PUNTOS_IGUAL valor_asignable 
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR IGUAL valor_asignable 
@@ -332,13 +345,17 @@ tipo_dato
 valor_asignable
     : expresion { $$ = $1; }
     | IDENTIFICADOR LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR LLAVE_IZQ lista_valores_struct COMA LLAVE_DER { $$ = new InstanciaStruct($1, $3, @1.first_line, @1.first_column); }
     | IDENTIFICADOR LLAVE_IZQ LLAVE_DER { $$ = new InstanciaStruct($1, [], @1.first_line, @1.first_column); }
+    | LLAVE_IZQ lista_valores_struct LLAVE_DER { $$ = new InstanciaStruct(null, $2, @1.first_line, @1.first_column); }
+    | LLAVE_IZQ lista_valores_struct COMA LLAVE_DER { $$ = new InstanciaStruct(null, $2, @1.first_line, @1.first_column); }
     | CORCHETE_IZQ CORCHETE_DER tipo_dato LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($5, @1.first_line, @1.first_column); }
     | LLAVE_IZQ lista_valores_opt LLAVE_DER { $$ = new Arreglo($2, @1.first_line, @1.first_column); }
     ;
 
 lista_valores_opt
     : valores_asignables { $$ = $1; }
+    | valores_asignables COMA { $$ = $1; }
     | /* vacio */ { $$ = []; }
     ;
 

@@ -12,13 +12,18 @@ class Declaracion extends Node {
     }
 
     interpretar(arbol, tabla) {
+        if (tabla.existeLocal && tabla.existeLocal(this.id)) {
+            arbol.errores.push(new Excepcion("Semántico", `La variable '${this.id}' ya existe en este bloque.`, this.linea, this.columna));
+            return null;
+        }
+
         let valorFinal = null;
         let tipoFinal = this.tipoDato;
 
         if (this.expresion) {
             let val = this.expresion.interpretar(arbol, tabla);
             
-            if (val.tipo === TIPO_DATO.NULL) {
+            if (!val || val.tipo === TIPO_DATO.NULL) {
                 return null; 
             }
 
@@ -38,7 +43,12 @@ class Declaracion extends Node {
         }
 
         const nuevoSimbolo = new Simbolo(tipoFinal, this.id, valorFinal, this.linea, this.columna);
-        tabla.guardar(this.id, nuevoSimbolo);
+        
+        if (tabla.tabla) {
+            tabla.tabla.set(this.id, nuevoSimbolo);
+        } else {
+            tabla.guardar(this.id, nuevoSimbolo);
+        }
         
         return null;
     }
@@ -50,14 +60,12 @@ class Declaracion extends Node {
         
         dot += `${padre} -> ${miId};\n`;
 
-        //nodo hijo si la declaración tiene dato explicito
         if (this.tipoDato) {
             let idTipo = `n${contador.c++}`;
             dot += `${idTipo} [label="Tipo: ${this.tipoDato}"];\n`;
             dot += `${miId} -> ${idTipo};\n`;
         }
 
-        //getAST si la declaración tiene expresión
         if (this.expresion && typeof this.expresion.getAST === 'function') {
             dot += this.expresion.getAST(miId, contador);
         }
