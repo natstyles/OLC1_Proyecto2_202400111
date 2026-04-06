@@ -20,7 +20,13 @@ class Llamada extends Node {
         }
 
         let funcion = funcSimbolo.valor;
-        let entornoLocal = new Entorno(tabla, "Función " + this.id);
+        
+        let entGlobal = tabla;
+        while (entGlobal.anterior != null) {
+            entGlobal = entGlobal.anterior;
+        }
+        
+        let entornoLocal = new Entorno(entGlobal, "Función " + this.id);
 
         if (this.parametros.length !== funcion.parametros.length) {
             console.error(`Error: Cantidad de parámetros incorrecta en llamada a ${this.id}.`);
@@ -37,7 +43,21 @@ class Llamada extends Node {
             }
             
             let nuevoSimbolo = new Simbolo(paramDecl.tipo, paramDecl.id, valorParam.valor, this.linea, this.columna);
-            entornoLocal.guardar(paramDecl.id, nuevoSimbolo);
+            
+            nuevoSimbolo.ambito = entornoLocal.nombre;
+            entornoLocal.tabla.set(paramDecl.id, nuevoSimbolo);
+            
+            let yaExiste = entornoLocal.listaSimbolosGlobal.some(s => s.id === paramDecl.id && s.ambito === entornoLocal.nombre);
+            if (!yaExiste) {
+                entornoLocal.listaSimbolosGlobal.push({
+                    id: paramDecl.id,
+                    tipoSimbolo: 'Variable',
+                    tipoDato: nuevoSimbolo.tipo,
+                    ambito: entornoLocal.nombre,
+                    linea: nuevoSimbolo.linea,
+                    columna: nuevoSimbolo.columna
+                });
+            }
         }
 
         for (let instr of funcion.instrucciones) {

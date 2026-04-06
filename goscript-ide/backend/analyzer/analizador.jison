@@ -67,16 +67,19 @@
 "struct"                    return 'R_STRUCT';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
+
 "=="                        return 'IGUAL_IGUAL';
 "!="                        return 'NO_IGUAL';
 "<="                        return 'MENOR_IGUAL';
 ">="                        return 'MAYOR_IGUAL';
 "<"                         return 'MENOR';
 ">"                         return 'MAYOR';
+
 ":="                        return 'DOS_PUNTOS_IGUAL';
 "+="                        return 'MAS_IGUAL';
 "-="                        return 'MENOS_IGUAL';
 "="                         return 'IGUAL';
+
 "&&"                        return 'AND';
 "||"                        return 'OR';
 "!"                         return 'NOT';
@@ -84,7 +87,6 @@
 "strconv.Atoi"              return 'R_ATOI';
 "strconv.ParseFloat"        return 'R_PARSEFLOAT';
 "reflect.TypeOf"            return 'R_TYPEOF';
-
 "len"                       return 'R_LEN';
 "append"                    return 'R_APPEND';
 "slices.Index"              return 'R_SLICES_INDEX';
@@ -95,16 +97,19 @@
 "*"                         return 'MULT';
 "/"                         return 'DIV';
 "%"                         return 'MOD';
+
 "("                         return 'PAR_IZQ';
 ")"                         return 'PAR_DER';
 "{"                         return 'LLAVE_IZQ';
 "}"                         return 'LLAVE_DER';
 "["                         return 'CORCHETE_IZQ';
 "]"                         return 'CORCHETE_DER';
+
 "."                         return 'PUNTO';
 ":"                         return 'DOS_PUNTOS';
 ";"                         return 'PT_COMA';
 ","                         return 'COMA';
+
 \"[^\"]*\"                  { yytext = yytext.substr(1, yyleng-2); return 'CADENA'; }
 \'([^\'\\]|\\.)\'           { yytext = yytext.substr(1, yyleng-2); return 'CARACTER'; }
 [0-9]+("."[0-9]+)\b         return 'DECIMAL';
@@ -112,8 +117,7 @@
 [a-zA-Z_][a-zA-Z0-9_]* return 'IDENTIFICADOR';
 
 <<EOF>>                     return 'EOF';
-.               
-                            { 
+.                           { 
                                 if (!yy.errores) yy.errores = [];
                                 yy.errores.push(new Excepcion("Léxico", "Carácter no válido: " + yytext, this.yylloc.first_line, this.yylloc.first_column + 1));
                                 return this.lex();
@@ -145,56 +149,61 @@ instrucciones
     | instruccion              { $$ = $1 != null ? [$1] : []; }
     ;
 
+pt_coma_opcional
+    : PT_COMA
+    | /* epsilon */
+    ;
+
 instruccion
-    : R_PRINT PAR_IZQ lista_valores_opt PAR_DER PT_COMA
+    : R_PRINT PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional
       { $$ = new Print($3, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion PT_COMA
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL expresion pt_coma_opcional
       { $$ = new Declaracion($3, $2, $5, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR IDENTIFICADOR IGUAL expresion PT_COMA
+    | R_VAR IDENTIFICADOR IDENTIFICADOR IGUAL expresion pt_coma_opcional
       { $$ = new Declaracion('STRUCT', $2, $5, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR tipo_dato PT_COMA
+    | R_VAR IDENTIFICADOR tipo_dato pt_coma_opcional
       { $$ = new Declaracion($3, $2, null, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion PT_COMA
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL expresion pt_coma_opcional
       { $$ = new Declaracion(null, $1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR IGUAL expresion PT_COMA
+    | IDENTIFICADOR IGUAL expresion pt_coma_opcional
       { $$ = new Asignacion($1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR MAS_IGUAL expresion PT_COMA
+    | IDENTIFICADOR MAS_IGUAL expresion pt_coma_opcional
       { $$ = new AsignacionCompuesta($1, $3, '+', @1.first_line, @1.first_column); }
-    | IDENTIFICADOR MENOS_IGUAL expresion PT_COMA
+    | IDENTIFICADOR MENOS_IGUAL expresion pt_coma_opcional
       { $$ = new AsignacionCompuesta($1, $3, '-', @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL expresion PT_COMA
+    | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL expresion pt_coma_opcional
       { $$ = new AsignacionStruct($1, $3, $5, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR lista_indices IGUAL expresion PT_COMA
+    | IDENTIFICADOR lista_indices IGUAL expresion pt_coma_opcional
       { $$ = new AsignacionArreglo($1, $2, $4, @1.first_line, @1.first_column); }
-    | R_TYPE IDENTIFICADOR R_STRUCT LLAVE_IZQ lista_atributos LLAVE_DER PT_COMA
+    | R_TYPE IDENTIFICADOR R_STRUCT LLAVE_IZQ lista_atributos LLAVE_DER pt_coma_opcional
       { $$ = new DefinicionStruct($2, $5, @1.first_line, @1.first_column); }
     | instruccion_if { $$ = $1; }
     | instruccion_while { $$ = $1; }
     | instruccion_for { $$ = $1; }
     | instruccion_switch { $$ = $1; }
     | instruccion_funcion { $$ = $1; }
-    | R_RETURN expresion PT_COMA { $$ = new Return($2, @1.first_line, @1.first_column); }
-    | R_RETURN PT_COMA { $$ = new Return(null, @1.first_line, @1.first_column); }
-    | R_BREAK PT_COMA { $$ = new Break(@1.first_line, @1.first_column); }
-    | R_CONTINUE PT_COMA { $$ = new Continue(@1.first_line, @1.first_column); }
-    | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER PT_COMA { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
-    | R_VAR IDENTIFICADOR tipo_dato IGUAL PT_COMA { $$ = null; }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL PT_COMA { $$ = null; }
-    | IDENTIFICADOR IGUAL PT_COMA { $$ = null; }
+    | R_RETURN expresion pt_coma_opcional { $$ = new Return($2, @1.first_line, @1.first_column); }
+    | R_RETURN pt_coma_opcional { $$ = new Return(null, @1.first_line, @1.first_column); }
+    | R_BREAK pt_coma_opcional { $$ = new Break(@1.first_line, @1.first_column); }
+    | R_CONTINUE pt_coma_opcional { $$ = new Continue(@1.first_line, @1.first_column); }
+    | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER pt_coma_opcional { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL pt_coma_opcional { $$ = null; }
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL pt_coma_opcional { $$ = null; }
+    | IDENTIFICADOR IGUAL pt_coma_opcional { $$ = null; }
 
     /* recuperación de declaraciones y asignaciones con expresion rota */
-    | R_VAR IDENTIFICADOR tipo_dato IGUAL error PT_COMA { $$ = null; }
-    | IDENTIFICADOR DOS_PUNTOS_IGUAL error PT_COMA { $$ = null; }
-    | IDENTIFICADOR IGUAL error PT_COMA { $$ = null; }
+    | R_VAR IDENTIFICADOR tipo_dato IGUAL error pt_coma_opcional { $$ = null; }
+    | IDENTIFICADOR DOS_PUNTOS_IGUAL error pt_coma_opcional { $$ = null; }
+    | IDENTIFICADOR IGUAL error pt_coma_opcional { $$ = null; }
 
     /* recuperación general */
-    | error PT_COMA
+    | error pt_coma_opcional
       { $$ = null; }
     ;
 
 lista_atributos
-    : lista_atributos atributo PT_COMA { $1.push($2); $$ = $1; }
-    | atributo PT_COMA                 { $$ = [$1]; }
+    : lista_atributos atributo pt_coma_opcional { $1.push($2); $$ = $1; }
+    | atributo pt_coma_opcional                 { $$ = [$1]; }
     ;
 
 atributo
