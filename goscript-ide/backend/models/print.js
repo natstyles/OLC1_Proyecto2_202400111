@@ -7,48 +7,62 @@ class Print extends Node {
     }
 
     interpretar(arbol, tabla) {
-        let salida = "";
-        for (let i = 0; i < this.expresiones.length; i++) {
-            let resultado = this.expresiones[i].interpretar(arbol, tabla);
-            if (resultado !== null && resultado !== undefined) {
-                if (typeof resultado.valor === 'object' && resultado.valor instanceof Map) {
-                    let obj = {};
-                    resultado.valor.forEach((value, key) => { obj[key] = value.valor; });
-                    salida += JSON.stringify(obj);
-                } else if (Array.isArray(resultado.valor)) {
-                    let arr = resultado.valor.map(v => v.valor);
-                    salida += JSON.stringify(arr);
-                } else {
-                    salida += resultado.valor;
-                }
-            } else {
-                salida += "nil";
-            }
-            
-            if (i < this.expresiones.length - 1) {
-                salida += " ";
+        let salida = [];
+
+        for (let exp of this.expresiones) {
+            let res = exp.interpretar(arbol, tabla);
+            if (res) {
+                salida.push(this.formatear(res));
             }
         }
-        arbol.actualizarConsola(salida + "\n");
+
+        // Unimos los valores con un espacio (comportamiento estándar de fmt.Println)
+        arbol.consola += salida.join(" ") + "\n";
         return null;
+    }
+
+    /**
+     * Método recursivo para limpiar la salida de objetos internos,
+     * arreglos (Slices) y mapas (Structs).
+     */
+    formatear(dato) {
+        if (dato === null || dato === undefined) return "null";
+
+        // 1. Si es nuestro objeto interno {tipo, valor}, extraemos el valor y seguimos limpiando
+        if (typeof dato === 'object' && !Array.isArray(dato) && !(dato instanceof Map) && 'valor' in dato) {
+            return this.formatear(dato.valor);
+        }
+
+        // 2. Si es un Arreglo (Slice o Matriz)
+        if (Array.isArray(dato)) {
+            let contenido = dato.map(item => this.formatear(item)).join(", ");
+            return "[" + contenido + "]";
+        }
+
+        // 3. Si es un Mapa (Struct)
+        if (dato instanceof Map) {
+            let partes = [];
+            dato.forEach((v, k) => {
+                // Formato k: v (ej: nombre: Ana)
+                partes.push(`${k}: ${this.formatear(v)}`);
+            });
+            return "{" + partes.join(", ") + "}";
+        }
+
+        // 4. Para tipos primitivos (int, float, string, bool)
+        return String(dato);
     }
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        
         let dot = `${miId} [label="Print"];\n`;
-        
         dot += `${padre} -> ${miId};\n`;
 
-        //recorremos cada print y ponemos como hijo
-        if (this.expresiones && Array.isArray(this.expresiones)) {
-            for (let exp of this.expresiones) {
-                if (exp && typeof exp.getAST === 'function') {
-                    dot += exp.getAST(miId, contador);
-                }
+        for (let exp of this.expresiones) {
+            if (exp && typeof exp.getAST === 'function') {
+                dot += exp.getAST(miId, contador);
             }
         }
-
         return dot;
     }
 }

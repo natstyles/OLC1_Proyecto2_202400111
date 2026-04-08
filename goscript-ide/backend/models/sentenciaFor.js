@@ -1,7 +1,5 @@
 const Node = require('./astNode');
 const Entorno = require('./entorno');
-const Break = require('./break');
-const Continue = require('./continue');
 const { TIPO_DATO } = require('./tipo');
 const Excepcion = require('./excepcion');
 
@@ -15,7 +13,6 @@ class SentenciaFor extends Node {
     }
 
     interpretar(arbol, tabla) {
-        // Le damos el nombre "For" al entorno donde vive la variable de inicialización
         const entornoFor = new Entorno(tabla, "For");
 
         if (this.inicializacion) {
@@ -24,7 +21,7 @@ class SentenciaFor extends Node {
 
         let cond = this.condicion.interpretar(arbol, entornoFor);
 
-        if (cond.tipo === TIPO_DATO.NULL) return null;
+        if (!cond || cond.tipo === 'NULL') return null;
 
         if (cond.tipo !== TIPO_DATO.BOOL) {
             arbol.errores.push(new Excepcion("Semántico", `La condición del 'for' debe ser booleana, se encontró ${cond.tipo}.`, this.linea, this.columna));
@@ -32,24 +29,29 @@ class SentenciaFor extends Node {
         }
 
         while (cond.valor === true) {
-            // Le damos el nombre "For" (o "For Bloque") al entorno de las instrucciones internas
-            const entornoBloque = new Entorno(entornoFor, "For");
-            let continuar = false;
+            const entornoBloque = new Entorno(entornoFor, "ForBloque");
+            let huboBreak = false;
             
             for (let instr of this.instrucciones) {
+                if (!instr) continue;
+                
                 const resultado = instr.interpretar(arbol, entornoBloque);
                 
-                if (resultado instanceof Break) {
-                    return null;
-                }
-                if (resultado instanceof Continue) {
-                    continuar = true;
-                    break;
-                }
-                if (resultado) {
-                    return resultado;
+                if (resultado && resultado.constructor) {
+                    if (resultado.constructor.name === 'Break') {
+                        huboBreak = true;
+                        break; 
+                    }
+                    if (resultado.constructor.name === 'Continue') {
+                        break; 
+                    }
+                    if (resultado.constructor.name === 'Return') {
+                        return resultado; 
+                    }
                 }
             }
+            
+            if (huboBreak) break;
             
             if (this.actualizacion) {
                 this.actualizacion.interpretar(arbol, entornoFor);
@@ -57,6 +59,8 @@ class SentenciaFor extends Node {
             
             cond = this.condicion.interpretar(arbol, entornoFor);
             
+            if (!cond || cond.tipo === 'NULL') break;
+
             if (cond.tipo !== TIPO_DATO.BOOL) {
                 arbol.errores.push(new Excepcion("Semántico", `La condición del 'for' debe ser booleana, se encontró ${cond.tipo}.`, this.linea, this.columna));
                 break;
@@ -68,7 +72,6 @@ class SentenciaFor extends Node {
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        
         let dot = `${miId} [label="Sentencia For"];\n`;
         dot += `${padre} -> ${miId};\n`;
 

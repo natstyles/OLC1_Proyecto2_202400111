@@ -188,12 +188,12 @@ instruccion
       { $$ = new AsignacionCompuesta($1, new Literal(TIPO_DATO.INT, 1, @1.first_line, @1.first_column), '+', @1.first_line, @1.first_column); }
     | IDENTIFICADOR MENOS_MENOS pt_coma_opcional
       { $$ = new AsignacionCompuesta($1, new Literal(TIPO_DATO.INT, 1, @1.first_line, @1.first_column), '-', @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR IGUAL valor_asignable pt_coma_opcional
-      { $$ = new AsignacionStruct($1, $3, $5, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR MAS_IGUAL valor_asignable pt_coma_opcional
-      { $$ = new AsignacionStruct($1, $3, new Aritmetica(new AccesoStruct($1, $3, @1.first_line, @1.first_column), '+', $5, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR MENOS_IGUAL valor_asignable pt_coma_opcional
-      { $$ = new AsignacionStruct($1, $3, new Aritmetica(new AccesoStruct($1, $3, @1.first_line, @1.first_column), '-', $5, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
+    | cadena_accesos IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionStruct($1, $3, @1.first_line, @1.first_column); }
+    | cadena_accesos MAS_IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionStruct($1, new Aritmetica(new AccesoStruct([...$1], @1.first_line, @1.first_column), '+', $3, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
+    | cadena_accesos MENOS_IGUAL valor_asignable pt_coma_opcional
+      { $$ = new AsignacionStruct($1, new Aritmetica(new AccesoStruct([...$1], @1.first_line, @1.first_column), '-', $3, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
     | IDENTIFICADOR lista_indices MAS_IGUAL valor_asignable pt_coma_opcional
       { $$ = new AsignacionArreglo($1, $2, new Aritmetica(new AccesoArreglo($1, $2, @1.first_line, @1.first_column), '+', $4, @1.first_line, @1.first_column), @1.first_line, @1.first_column); }
     | IDENTIFICADOR lista_indices MENOS_IGUAL valor_asignable pt_coma_opcional
@@ -248,24 +248,16 @@ parametro
     ;
 
 instruccion_if
-    : R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
-      { $$ = new SentenciaIf($3, $6, null, @1.first_line, @1.first_column); }
-    | R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER
+    : R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaIf($2, $4, null, @1.first_line, @1.first_column); }
-    | R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER R_ELSE LLAVE_IZQ instrucciones LLAVE_DER
-      { $$ = new SentenciaIf($3, $6, $10, @1.first_line, @1.first_column); }
     | R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER R_ELSE LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaIf($2, $4, $8, @1.first_line, @1.first_column); }
-    | R_IF PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER R_ELSE instruccion_if
-      { $$ = new SentenciaIf($3, $6, $9, @1.first_line, @1.first_column); }
     | R_IF expresion LLAVE_IZQ instrucciones LLAVE_DER R_ELSE instruccion_if
       { $$ = new SentenciaIf($2, $4, $7, @1.first_line, @1.first_column); }
     ;
 
 instruccion_while
-    : R_WHILE PAR_IZQ expresion PAR_DER LLAVE_IZQ instrucciones LLAVE_DER
-      { $$ = new SentenciaWhile($3, $6, @1.first_line, @1.first_column); }
-    | R_WHILE expresion LLAVE_IZQ instrucciones LLAVE_DER
+    : R_WHILE expresion LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaWhile($2, $4, @1.first_line, @1.first_column); }
     ;
 
@@ -274,13 +266,15 @@ instruccion_for
       { $$ = new SentenciaFor($3, $5, $7, $10, @1.first_line, @1.first_column); }
     | R_FOR init_for PT_COMA expresion PT_COMA actualizacion_for LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaFor($2, $4, $6, $8, @1.first_line, @1.first_column); }
+    | R_FOR expresion LLAVE_IZQ instrucciones LLAVE_DER
+      { $$ = new SentenciaWhile($2, $4, @1.first_line, @1.first_column); }
     | R_FOR IDENTIFICADOR COMA IDENTIFICADOR DOS_PUNTOS_IGUAL R_RANGE acceso_range LLAVE_IZQ instrucciones LLAVE_DER
       { $$ = new SentenciaForRange($2, $4, $7, $9, @1.first_line, @1.first_column); }
     ;
 
 acceso_range
     : IDENTIFICADOR { $$ = new Acceso($1, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
+    | cadena_accesos { $$ = new AccesoStruct($1, @1.first_line, @1.first_column); }
     ;
 
 init_for
@@ -308,9 +302,7 @@ actualizacion_for
     ;
 
 instruccion_switch
-    : R_SWITCH PAR_IZQ expresion PAR_DER LLAVE_IZQ casos LLAVE_DER
-      { $$ = new SentenciaSwitch($3, $6, @1.first_line, @1.first_column); }
-    | R_SWITCH expresion LLAVE_IZQ casos LLAVE_DER
+    : R_SWITCH expresion LLAVE_IZQ casos LLAVE_DER
       { $$ = new SentenciaSwitch($2, $4, @1.first_line, @1.first_column); }
     ;
 
@@ -399,8 +391,8 @@ expresion
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = new AccesoStruct($1, $3, @1.first_line, @1.first_column); }
-    | IDENTIFICADOR lista_indices { $$ = new AccesoArreglo($1, $2, @1.first_line, @1.first_column); }
+    | cadena_accesos                { $$ = new AccesoStruct($1, @1.first_line, @1.first_column); }
+    | IDENTIFICADOR lista_indices   { $$ = new AccesoArreglo($1, $2, @1.first_line, @1.first_column); }
     | IDENTIFICADOR PAR_IZQ lista_valores_opt PAR_DER { $$ = new Llamada($1, $3, @1.first_line, @1.first_column); }
     | PAR_IZQ valor_asignable PAR_DER { $$ = $2; }
 
@@ -424,4 +416,9 @@ lista_valores_struct
 
 valor_struct
     : IDENTIFICADOR DOS_PUNTOS valor_asignable { $$ = { id: $1, expresion: $3 }; }
+    ;
+
+cadena_accesos
+    : cadena_accesos PUNTO IDENTIFICADOR { $1.push($3); $$ = $1; }
+    | IDENTIFICADOR PUNTO IDENTIFICADOR { $$ = [$1, $3]; }
     ;

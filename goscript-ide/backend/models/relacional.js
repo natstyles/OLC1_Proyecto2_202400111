@@ -3,55 +3,60 @@ const { TIPO_DATO } = require('./tipo');
 const Excepcion = require('./excepcion');
 
 class Relacional extends Node {
-    constructor(izq, operacion, der, linea, columna) {
+    constructor(izq, operador, der, linea, columna) {
         super(linea, columna);
         this.izq = izq;
-        this.operacion = operacion;
+        this.operador = operador;
         this.der = der;
     }
 
     interpretar(arbol, tabla) {
-        const izq = this.izq.interpretar(arbol, tabla);
-        const der = this.der.interpretar(arbol, tabla);
+        let izq = this.izq.interpretar(arbol, tabla);
+        let der = this.der.interpretar(arbol, tabla);
 
-        if (izq.tipo === TIPO_DATO.NULL || der.tipo === TIPO_DATO.NULL) {
-            return { tipo: TIPO_DATO.NULL, valor: null };
+        // Si alguna expresión falló, propagamos el null
+        if (!izq || !der || izq.tipo === 'NULL' || der.tipo === 'NULL') {
+            return { tipo: 'NULL', valor: null };
         }
 
-        if (['<', '<=', '>', '>='].includes(this.operacion)) {
-            if (![TIPO_DATO.INT, TIPO_DATO.FLOAT].includes(izq.tipo) || ![TIPO_DATO.INT, TIPO_DATO.FLOAT].includes(der.tipo)) {
-                arbol.errores.push(new Excepcion("Semántico", `Operación relacional '${this.operacion}' no válida entre ${izq.tipo} y ${der.tipo}.`, this.linea, this.columna));
-                return { tipo: TIPO_DATO.NULL, valor: null };
-            }
+        let valIzq = izq.valor;
+        let valDer = der.valor;
+
+        // Transformación clave: Convertir RUNE a su valor numérico ASCII
+        if (izq.tipo === TIPO_DATO.RUNE && typeof valIzq === 'string') {
+            valIzq = valIzq.charCodeAt(0);
+        }
+        if (der.tipo === TIPO_DATO.RUNE && typeof valDer === 'string') {
+            valDer = valDer.charCodeAt(0);
         }
 
-        let resultado = false;
-
-        switch (this.operacion) {
-            case '==': resultado = izq.valor == der.valor; break;
-            case '!=': resultado = izq.valor != der.valor; break;
-            case '<':  resultado = Number(izq.valor) < Number(der.valor); break;
-            case '<=': resultado = Number(izq.valor) <= Number(der.valor); break;
-            case '>':  resultado = Number(izq.valor) > Number(der.valor); break;
-            case '>=': resultado = Number(izq.valor) >= Number(der.valor); break;
+        // Ejecutar la comparación relacional
+        switch (this.operador) {
+            case '<':
+                return { tipo: TIPO_DATO.BOOL, valor: valIzq < valDer };
+            case '>':
+                return { tipo: TIPO_DATO.BOOL, valor: valIzq > valDer };
+            case '<=':
+                return { tipo: TIPO_DATO.BOOL, valor: valIzq <= valDer };
+            case '>=':
+                return { tipo: TIPO_DATO.BOOL, valor: valIzq >= valDer };
+            case '==':
+                return { tipo: TIPO_DATO.BOOL, valor: valIzq === valDer };
+            case '!=':
+                return { tipo: TIPO_DATO.BOOL, valor: valIzq !== valDer };
+            default:
+                return { tipo: 'NULL', valor: null };
         }
-
-        return { tipo: TIPO_DATO.BOOL, valor: resultado };
     }
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        
-        let dot = `${miId} [label="Relacional\\n'${this.operacion}'"];\n`;
-        
+        let dot = `${miId} [label="Relacional\\n'${this.operador}'"];\n`;
         dot += `${padre} -> ${miId};\n`;
 
-        //operando izquierdo
         if (this.izq && typeof this.izq.getAST === 'function') {
             dot += this.izq.getAST(miId, contador);
         }
-
-        //operando derecho
         if (this.der && typeof this.der.getAST === 'function') {
             dot += this.der.getAST(miId, contador);
         }

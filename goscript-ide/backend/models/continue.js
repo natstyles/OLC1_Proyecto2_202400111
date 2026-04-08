@@ -1,6 +1,6 @@
 const Node = require('./astNode');
 
-class Break extends Node {
+class Continue extends Node {
     constructor(linea, columna) {
         super(linea, columna);
     }
@@ -11,10 +11,8 @@ class Break extends Node {
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        let dot = `${miId} [label="Break"];\n`;
-        dot += `${padre} -> ${miId};\n`;
-        return dot;
+        return `${miId} [label="Continue"];\n${padre} -> ${miId};\n`;
     }
 }
 
-module.exports = Break;
+module.exports = Continue;

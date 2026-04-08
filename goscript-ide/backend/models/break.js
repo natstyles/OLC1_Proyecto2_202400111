@@ -11,9 +11,7 @@ class Break extends Node {
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        let dot = `${miId} [label="Break"];\n`;
-        dot += `${padre} -> ${miId};\n`;
-        return dot;
+        return `${miId} [label="Break"];\n${padre} -> ${miId};\n`;
     }
 }
 

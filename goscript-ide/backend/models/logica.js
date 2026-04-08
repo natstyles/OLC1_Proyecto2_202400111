@@ -12,27 +12,36 @@ class Logica extends Node {
 
     interpretar(arbol, tabla) {
         const izq = this.izq ? this.izq.interpretar(arbol, tabla) : null;
-        const der = this.der.interpretar(arbol, tabla);
+        const der = this.der ? this.der.interpretar(arbol, tabla) : null;
 
-        if ((this.izq && izq.tipo === TIPO_DATO.NULL) || der.tipo === TIPO_DATO.NULL) {
-            return { tipo: TIPO_DATO.NULL, valor: null };
+        // 1. Manejo de la operación unaria NOT (!)
+        if (this.operacion === '!') {
+            if (!der || der.tipo === 'NULL') return { tipo: 'NULL', valor: null };
+
+            if (der.tipo !== TIPO_DATO.BOOL) {
+                arbol.errores.push(new Excepcion("Semántico", `Operación lógica '!' requiere un operando booleano, se encontró ${der.tipo}.`, this.linea, this.columna));
+                return { tipo: 'NULL', valor: null };
+            }
+            return { tipo: TIPO_DATO.BOOL, valor: !Boolean(der.valor) };
+        }
+
+        // 2. Manejo de operaciones binarias AND (&&) y OR (||)
+        
+        // Verificación de seguridad para evitar errores de lectura nula
+        if (!izq || !der || izq.tipo === 'NULL' || der.tipo === 'NULL') {
+            return { tipo: 'NULL', valor: null };
+        }
+
+        if (izq.tipo !== TIPO_DATO.BOOL || der.tipo !== TIPO_DATO.BOOL) {
+            arbol.errores.push(new Excepcion("Semántico", `Operación lógica '${this.operacion}' requiere operandos booleanos, se encontró ${izq.tipo} y ${der.tipo}.`, this.linea, this.columna));
+            return { tipo: 'NULL', valor: null };
         }
 
         let resultado = false;
-
-        if (this.operacion === '!') {
-            if (der.tipo !== TIPO_DATO.BOOL) {
-                arbol.errores.push(new Excepcion("Semántico", `Operación lógica '!' requiere un operando booleano, se encontró ${der.tipo}.`, this.linea, this.columna));
-                return { tipo: TIPO_DATO.NULL, valor: null };
-            }
-            resultado = !Boolean(der.valor);
-        } else {
-            if (izq.tipo !== TIPO_DATO.BOOL || der.tipo !== TIPO_DATO.BOOL) {
-                arbol.errores.push(new Excepcion("Semántico", `Operación lógica '${this.operacion}' requiere operandos booleanos, se encontró ${izq.tipo} y ${der.tipo}.`, this.linea, this.columna));
-                return { tipo: TIPO_DATO.NULL, valor: null };
-            }
-            if (this.operacion === '&&') resultado = Boolean(izq.valor) && Boolean(der.valor);
-            if (this.operacion === '||') resultado = Boolean(izq.valor) || Boolean(der.valor);
+        if (this.operacion === '&&') {
+            resultado = Boolean(izq.valor) && Boolean(der.valor);
+        } else if (this.operacion === '||') {
+            resultado = Boolean(izq.valor) || Boolean(der.valor);
         }
 
         return { tipo: TIPO_DATO.BOOL, valor: resultado };
