@@ -11,6 +11,7 @@ let archivos = [];
 let archivoActualIndex = -1;
 let contadorNuevos = 0;
 
+//codemirror
 const editor = CodeMirror.fromTextArea(editorTextArea, {
     lineNumbers: true,
     mode: "javascript",
@@ -30,6 +31,7 @@ editor.on('change', () => {
     }
 });
 
+//logic pestaña
 function renderizarPestanas() {
     tabsContainer.innerHTML = '';
     
@@ -155,9 +157,11 @@ btnGuardarComo.addEventListener('click', () => {
     ejecutarGuardarComo(archivos[archivoActualIndex]);
 });
 
+//inicializar la primera pestaña
 contadorNuevos++;
 crearPestana(`Nuevo ${contadorNuevos}`, '', true);
 
+//logic reports
 function verReporte(tipo) {
     document.querySelectorAll('.report-tab').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.report-content').forEach(cont => cont.classList.remove('active'));
@@ -171,7 +175,60 @@ function verReporte(tipo) {
     document.getElementById(`cont-${tipo}`).classList.add('active');
 }
 
-//ejecutar
+//AST ZOOM
+let scale = 1;
+let isDragging = false;
+let startX, startY;
+let translateX = 0, translateY = 0;
+const canvasAst = document.getElementById("canvas-ast");
+const astContentWrapper = document.getElementById("ast-content-wrapper");
+
+function aplicarTransformacion() {
+    astContentWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+}
+
+function resetearZoomPan() {
+    scale = 1;
+    translateX = 0;
+    translateY = 0;
+    aplicarTransformacion();
+}
+
+canvasAst.addEventListener('wheel', function(e) {
+    e.preventDefault(); 
+    const zoomSensitivity = 0.1;
+    const delta = e.deltaY > 0 ? -zoomSensitivity : zoomSensitivity;
+    scale += delta;
+    scale = Math.max(0.1, Math.min(scale, 5)); 
+    aplicarTransformacion();
+});
+
+canvasAst.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    startX = e.clientX - translateX;
+    startY = e.clientY - translateY;
+    canvasAst.style.cursor = 'grabbing';
+});
+
+canvasAst.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    translateX = e.clientX - startX;
+    translateY = e.clientY - startY;
+    aplicarTransformacion();
+});
+
+canvasAst.addEventListener('mouseup', function() {
+    isDragging = false;
+    canvasAst.style.cursor = 'grab';
+});
+
+canvasAst.addEventListener('mouseleave', function() {
+    isDragging = false;
+    canvasAst.style.cursor = 'grab';
+});
+
+//logic exec.
 document.getElementById('btnEjecutar').addEventListener('click', async () => {
     const codigo = editor.getValue();
     
@@ -219,26 +276,25 @@ document.getElementById('btnEjecutar').addEventListener('click', async () => {
         }
 
         //VIZ JS PARA RENDER
-        const canvasAst = document.getElementById("canvas-ast");
         if (data.ast && data.ast.trim() !== "") {
-            canvasAst.innerHTML = "<p style='color: #666; margin-top: 20px;'>Generando árbol...</p>"; 
+            resetearZoomPan(); 
+            astContentWrapper.innerHTML = "<p style='color: #666;'>Generando árbol...</p>"; 
             
             var viz = new Viz();
             viz.renderSVGElement(data.ast)
             .then(function(element) {
-                canvasAst.innerHTML = ""; 
-                // Ajustamos el SVG para que sea responsivo
-                element.style.maxWidth = "100%";
+                astContentWrapper.innerHTML = ""; 
+                element.style.maxWidth = "none";
                 element.style.height = "auto";
-                canvasAst.appendChild(element);
+                astContentWrapper.appendChild(element);
             })
             .catch(error => {
-                viz = new Viz(); // Reiniciamos la instancia en caso de fallo
+                viz = new Viz(); 
                 console.error("Error al renderizar el AST:", error);
-                canvasAst.innerHTML = "<p style='color: red; margin-top: 20px;'>Error al dibujar el árbol de sintaxis.</p>";
+                astContentWrapper.innerHTML = "<p style='color: red;'>Error al dibujar el árbol de sintaxis.</p>";
             });
         } else {
-            canvasAst.innerHTML = "<p style='color: #666; margin-top: 20px;'>No se generó el AST.</p>";
+            astContentWrapper.innerHTML = "<p style='color: #666;'>No se generó el AST.</p>";
         }
 
         verReporte('consola');
@@ -247,4 +303,55 @@ document.getElementById('btnEjecutar').addEventListener('click', async () => {
         console.error('Error de conexión:', error);
         document.getElementById('consola').value = "Error al conectar con el servidor backend.";
     }
+});
+
+//DESCARGAR AST
+document.getElementById('btnDescargarAST').addEventListener('click', () => {
+    const svg = document.querySelector('#ast-content-wrapper svg');
+    
+    if (!svg) {
+        alert("¡Primero debes ejecutar el código para generar un AST válido!");
+        return;
+    }
+
+    //obtenemos las dimensiones reales
+    const width = parseInt(svg.getAttribute('width')) || svg.getBoundingClientRect().width;
+    const height = parseInt(svg.getAttribute('height')) || svg.getBoundingClientRect().height;
+
+    //clonamos el SVG y serializamos a string
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svg);
+    
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    const img = new Image();
+    img.onload = function() {
+        const canvas = document.createElement("canvas");
+        
+        //multiplicamos por 2 para alta resolución
+        canvas.width = width * 2;
+        canvas.height = height * 2;
+        const ctx = canvas.getContext("2d");
+        
+        //fondo blanco
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.scale(2, 2);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        //convertir y descargar
+        const pngUrl = canvas.toDataURL("image/png");
+        const a = document.createElement("a");
+        a.href = pngUrl;
+        a.download = "GoScript_AST.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        URL.revokeObjectURL(url); 
+    };
+    
+    img.src = url;
 });
