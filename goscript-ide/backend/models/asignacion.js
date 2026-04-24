@@ -1,4 +1,5 @@
 const Node = require('./astNode');
+const { TIPO_DATO } = require('./tipo');
 const Excepcion = require('./excepcion');
 
 class Asignacion extends Node {
@@ -9,42 +10,37 @@ class Asignacion extends Node {
     }
 
     interpretar(arbol, tabla) {
-        let simbolo = tabla.obtener(this.id);
-        
-        if (simbolo === null) {
-            arbol.errores.push(new Excepcion("Semántico", `Variable '${this.id}' no existe.`, this.linea, this.columna));
+        let val = this.expresion.interpretar(arbol, tabla);
+        if (!val || val.tipo === 'NULL') return null;
+
+        //uso del método 'obtener' de tu entorno.js
+        let variable = tabla.obtener(this.id);
+        if (!variable) {
+            arbol.errores.push(new Excepcion("Semántico", `Variable '${this.id}' no encontrada.`, this.linea, this.columna));
             return null;
         }
 
-        let nuevoValor = this.expresion.interpretar(arbol, tabla);
-        
-        if (nuevoValor.tipo === 'NIL') {
-            return null; 
+        //validación de tipos y casteo implícito
+        if (variable.tipo !== val.tipo) {
+            if (variable.tipo === TIPO_DATO.FLOAT && val.tipo === TIPO_DATO.INT) {
+                variable.valor = val.valor; //e permite asignar enteros a flotantes
+            } else {
+                arbol.errores.push(new Excepcion("Semántico", `No se puede asignar un valor de tipo ${val.tipo} a la variable '${this.id}' de tipo ${variable.tipo}.`, this.linea, this.columna));
+                return null;
+            }
+        } else {
+            variable.valor = val.valor;
         }
-
-        if (simbolo.tipo !== nuevoValor.tipo) {
-            arbol.errores.push(new Excepcion("Semántico", `No se puede asignar un valor de tipo ${nuevoValor.tipo} a la variable '${this.id}' de tipo ${simbolo.tipo}.`, this.linea, this.columna));
-            return null;
-        }
-
-        simbolo.valor = nuevoValor.valor;
-        tabla.guardar(this.id, simbolo);
-        
         return null;
     }
 
     getAST(padre, contador) {
         let miId = `n${contador.c++}`;
-        
-        let dot = `${miId} [label="Asignación\\n'${this.id}'"];\n`;
-        
+        let dot = `${miId} [label="Asignación\\n${this.id}"];\n`;
         dot += `${padre} -> ${miId};\n`;
-
-        //llamada recursiva a la operacion asignada
         if (this.expresion && typeof this.expresion.getAST === 'function') {
             dot += this.expresion.getAST(miId, contador);
         }
-
         return dot;
     }
 }

@@ -68,6 +68,7 @@
 "struct"                    return 'R_STRUCT';
 "true"                      return 'TRUE';
 "false"                     return 'FALSE';
+"nil"                       return 'R_NIL';
 
 "=="                        return 'IGUAL_IGUAL';
 "!="                        return 'NO_IGUAL';
@@ -131,7 +132,7 @@
 .                           { 
                                 if (!yy.errores) yy.errores = [];
                                 yy.errores.push(new Excepcion("Léxico", "Carácter no válido: " + yytext, this.yylloc.first_line, this.yylloc.first_column + 1));
-                                return this.lex();
+                                /* No se hace return para que el analizador ignore el error y siga leyendo */
                             }
 
 /lex
@@ -390,6 +391,7 @@ expresion
     | CARACTER                      { $$ = new Literal(TIPO_DATO.RUNE, $1, @1.first_line, @1.first_column); }
     | TRUE                          { $$ = new Literal(TIPO_DATO.BOOL, true, @1.first_line, @1.first_column); }
     | FALSE                         { $$ = new Literal(TIPO_DATO.BOOL, false, @1.first_line, @1.first_column); }
+    | R_NIL                         { $$ = new Literal('NULL', null, @1.first_line, @1.first_column); }
     | IDENTIFICADOR                 { $$ = new Acceso($1, @1.first_line, @1.first_column); }
     | cadena_accesos                { $$ = new AccesoStruct($1, @1.first_line, @1.first_column); }
     | IDENTIFICADOR lista_indices   { $$ = new AccesoArreglo($1, $2, @1.first_line, @1.first_column); }

@@ -10,42 +10,42 @@ class Relacional extends Node {
         this.der = der;
     }
 
-    interpretar(arbol, tabla) {
+interpretar(arbol, tabla) {
         let izq = this.izq.interpretar(arbol, tabla);
         let der = this.der.interpretar(arbol, tabla);
 
-        // Si alguna expresión falló, propagamos el null
-        if (!izq || !der || izq.tipo === 'NULL' || der.tipo === 'NULL') {
+        if (!izq || !der) {
+            return { tipo: 'NULL', valor: null };
+        }
+
+        //permitir comparación de igualdad con nulos (nil)
+        if (this.operador === '==' || this.operador === '!=') {
+            if (izq.tipo === 'NULL' || der.tipo === 'NULL' || izq.valor === null || der.valor === null) {
+                let esIgual = (izq.valor === der.valor);
+                if (this.operador === '==') return { tipo: TIPO_DATO.BOOL, valor: esIgual };
+                if (this.operador === '!=') return { tipo: TIPO_DATO.BOOL, valor: !esIgual };
+            }
+        }
+
+        //si hay un null en operaciones <, >, <=, >=, sigue devolviendo null
+        if (izq.tipo === 'NULL' || der.tipo === 'NULL') {
             return { tipo: 'NULL', valor: null };
         }
 
         let valIzq = izq.valor;
         let valDer = der.valor;
 
-        // Transformación clave: Convertir RUNE a su valor numérico ASCII
-        if (izq.tipo === TIPO_DATO.RUNE && typeof valIzq === 'string') {
-            valIzq = valIzq.charCodeAt(0);
-        }
-        if (der.tipo === TIPO_DATO.RUNE && typeof valDer === 'string') {
-            valDer = valDer.charCodeAt(0);
-        }
+        if (izq.tipo === TIPO_DATO.RUNE && typeof valIzq === 'string') valIzq = valIzq.charCodeAt(0);
+        if (der.tipo === TIPO_DATO.RUNE && typeof valDer === 'string') valDer = valDer.charCodeAt(0);
 
-        // Ejecutar la comparación relacional
         switch (this.operador) {
-            case '<':
-                return { tipo: TIPO_DATO.BOOL, valor: valIzq < valDer };
-            case '>':
-                return { tipo: TIPO_DATO.BOOL, valor: valIzq > valDer };
-            case '<=':
-                return { tipo: TIPO_DATO.BOOL, valor: valIzq <= valDer };
-            case '>=':
-                return { tipo: TIPO_DATO.BOOL, valor: valIzq >= valDer };
-            case '==':
-                return { tipo: TIPO_DATO.BOOL, valor: valIzq === valDer };
-            case '!=':
-                return { tipo: TIPO_DATO.BOOL, valor: valIzq !== valDer };
-            default:
-                return { tipo: 'NULL', valor: null };
+            case '<': return { tipo: TIPO_DATO.BOOL, valor: valIzq < valDer };
+            case '>': return { tipo: TIPO_DATO.BOOL, valor: valIzq > valDer };
+            case '<=': return { tipo: TIPO_DATO.BOOL, valor: valIzq <= valDer };
+            case '>=': return { tipo: TIPO_DATO.BOOL, valor: valIzq >= valDer };
+            case '==': return { tipo: TIPO_DATO.BOOL, valor: valIzq === valDer };
+            case '!=': return { tipo: TIPO_DATO.BOOL, valor: valIzq !== valDer };
+            default: return { tipo: 'NULL', valor: null };
         }
     }
 

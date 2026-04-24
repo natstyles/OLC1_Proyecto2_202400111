@@ -12,18 +12,15 @@ class Entorno {
     }
 
     guardar(id, simbolo) {
-        let ent = this;
-        while (ent != null) {
-            if (ent.tabla.has(id)) {
-                ent.tabla.set(id, simbolo);
-                return true;
-            }
-            ent = ent.anterior;
+        //las declaraciones siempre deben hacerse en el entorno local actual
+        if (this.tabla.has(id)) {
+            return false; //retornamos false solo si la variable ya existe en ESTE entorno exacto
         }
         
         simbolo.ambito = this.nombre;
         this.tabla.set(id, simbolo);
         
+        //registrar en la tabla de símbolos general para el reporte web
         let yaExiste = this.listaSimbolosGlobal.some(s => s.id === id && s.ambito === this.nombre);
         if (!yaExiste) {
             this.listaSimbolosGlobal.push({
@@ -40,6 +37,7 @@ class Entorno {
 
     obtener(id) {
         let ent = this;
+        //debe buscar hacia arriba para leer o asignar a la variable más cercana
         while (ent != null) {
             if (ent.tabla.has(id)) {
                 return ent.tabla.get(id);
